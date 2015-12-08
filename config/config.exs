@@ -20,6 +20,11 @@ use Mix.Config
 #
 #     config :logger, level: :info
 #
+config :vassal, [
+  ip: {0, 0, 0, 0},
+  port: 4567,
+  url: "http://localhost:4567"
+]
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment

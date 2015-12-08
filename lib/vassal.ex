@@ -1,4 +1,8 @@
 defmodule Vassal do
+  @moduledoc """
+  A simple message queue with an SQS interface.
+  """
+
   use Application
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
@@ -7,12 +11,19 @@ defmodule Vassal do
     import Supervisor.Spec, warn: false
 
     children = [
-      # Define workers and child supervisors to be supervised
-      # worker(Vassal.Worker, [arg1, arg2, arg3]),
+      supervisor(
+        Supervisor,
+        [[worker(Vassal.QueueProcessStore, []),
+          worker(Vassal.QueueManager, [Vassal.QueueProcessStore])],
+         [strategy: :rest_for_one]]
+      ),
+      Plug.Adapters.Cowboy.child_spec(
+        :http, Vassal.WebRouter, [],
+        [port: Application.get_env(:vassal, :port),
+         ip:   Application.get_env(:vassal, :ip)]
+      )
     ]
 
-    # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Vassal.Supervisor]
     Supervisor.start_link(children, opts)
   end
