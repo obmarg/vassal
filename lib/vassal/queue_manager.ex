@@ -6,6 +6,9 @@ defmodule Vassal.QueueManager do
 
   alias Vassal.Actions.CreateQueue
   alias Vassal.Results.CreateQueueResult
+  alias Vassal.Actions.GetQueueUrl
+  alias Vassal.Results.GetQueueUrlResult
+  alias Vassal.Results.SQSError
 
   @doc """
   Start the queue manager GenServer.
@@ -28,7 +31,8 @@ defmodule Vassal.QueueManager do
   supervisor and then initialise a worker for each of the defined queues.
   """
   def init(queue_store) do
-    {:ok, %{supervisor: start_queue_supervisor(queue_store)}}
+    {:ok, %{supervisor: start_queue_supervisor(queue_store),
+            queue_store: queue_store}}
   end
 
   @doc """
@@ -37,7 +41,20 @@ defmodule Vassal.QueueManager do
   def handle_call(%CreateQueue{queue_name: queue_name, attributes: attrs},
                   _from, state) do
     start_child(queue_name, attrs, state.supervisor)
-    {:reply, %CreateQueueResult{queue_name: queue_name}, state}
+    {:reply, %CreateQueueResult{queue_url: queue_url(queue_name)}, state}
+  end
+
+  @doc """
+  Gets the URL of a Queue if it exists.
+  """
+  def handle_call(%GetQueueUrl{queue_name: queue_name}, _from, state) do
+    queue_pid = Vassal.QueueProcessStore.lookup(state.queue_store, queue_name)
+    result = if queue_pid != nil do
+      %GetQueueUrlResult{queue_url: queue_url(queue_name)}
+    else
+      %SQSError{code: "AWS.SimpleQueueService.NonExistentQueue"}
+    end
+    {:reply, result, state}
   end
 
   defp start_queue_supervisor(queue_store) do
@@ -54,5 +71,9 @@ defmodule Vassal.QueueManager do
 
   defp start_child(queue_name, attrs, supervisor) do
     {:ok, _pid} = Supervisor.start_child(supervisor, [queue_name, attrs])
+  end
+
+  defp queue_url(queue_name) do
+    "#{Application.get_env(:vassal, :url)}/1234/#{queue_name}"
   end
 end

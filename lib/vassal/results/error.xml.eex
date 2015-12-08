@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<ErrorResponse>
+    <Error>
+        <Type><%= result.type %></Type>
+        <Code><%= result.code %></Code>
+        <Message><%= result.code %>; See the SQS docs.</Message>
+        <Detail/>
+    </Error>
+    <RequestId><%= UUID.uuid4 %></RequestId>
+</ErrorResponse>

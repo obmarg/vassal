@@ -69,10 +69,24 @@ defmodule Vassal.Actions do
 
   defimpl ActionValidation, for: CreateQueue do
     def valid?(action) do
-      cond do
-        not Regex.match?(~r/[\w-]{1,80}/, action.queue_name) -> false
-        true -> true
-      end
+      Vassal.Actions.valid_queue_name?(action.queue_name)
+    end
+  end
+
+  defmodule GetQueueUrl do
+    @moduledoc """
+    Action for getting the URL of a queue if it exists.
+    """
+    defstruct queue_name: nil
+
+    def from_params(params) do
+      %GetQueueUrl{queue_name: params["QueueName"]}
+    end
+  end
+
+  defimpl ActionValidation, for: GetQueueUrl do
+    def valid?(action) do
+      Vassal.Actions.valid_queue_name?(action.queue_name)
     end
   end
 
@@ -82,7 +96,15 @@ defmodule Vassal.Actions do
   def params_to_action(params) do
     case params["Action"] do
       "CreateQueue" -> CreateQueue.from_params(params)
+      "GetQueueUrl" -> GetQueueUrl.from_params(params)
     end
+  end
+
+  @doc """
+  Validates a queue name.
+  """
+  def valid_queue_name?(queue_name) do
+    Regex.match?(~r/[\w-]{1,80}/, queue_name)
   end
 
 end

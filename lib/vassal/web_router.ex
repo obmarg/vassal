@@ -15,6 +15,8 @@ defmodule Vassal.WebRouter do
   plug :match
   plug :dispatch
 
+  alias Vassal.Results.SQSError
+
   def init(_options) do
     []
   end
@@ -38,5 +40,11 @@ defmodule Vassal.WebRouter do
     |> Vassal.Actions.valid!
     |> Vassal.QueueManager.do_action
     |> Vassal.Results.Result.to_xml
+  end
+
+  defp handle_errors(conn, %{reason: %Vassal.Results.SQSError{} = error}) do
+    conn
+    |> put_resp_header("content-type", "application/xml")
+    |> send_resp(400, Vassal.Results.Result.to_xml(error))
   end
 end

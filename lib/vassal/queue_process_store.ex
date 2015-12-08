@@ -2,7 +2,7 @@ defmodule Vassal.QueueProcessStore do
   @moduledoc """
   Stores the PIDs of running queue processes and allows them to be queried.
 
-  Will monitor the queue PIDs for failure and 
+  Will monitor the queue PIDs and remove them on failure.
   """
   use GenServer
 
@@ -17,14 +17,14 @@ defmodule Vassal.QueueProcessStore do
   Adds a queue process to the store.
   """
   def add(store, queue_id, pid) do
-    GenServer.send_call(store, {:add, queue_id, pid})
+    GenServer.call(store, {:add, queue_id, pid})
   end
 
   @doc """
   Removes a queue process from the store
   """
   def remove(store, queue_id) do
-    GenServer.send_call(store, {:remove, queue_id})
+    GenServer.call(store, {:remove, queue_id})
   end
 
   @doc """
@@ -48,7 +48,7 @@ defmodule Vassal.QueueProcessStore do
   def handle_call({:add, queue_name, pid}, _from, state) do
     :ets.insert(state.name, {queue_name, pid})
     Process.monitor(pid)
-    queues_by_pid = %{state.queues_by_pid | :pid => queue_name}
+    queues_by_pid = Dict.put(state.queues_by_pid, pid, queue_name)
     {:reply, :ok, %{state | queues_by_pid: queues_by_pid}}
   end
 

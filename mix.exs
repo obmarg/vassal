@@ -32,9 +32,10 @@ defmodule Vassal.Mixfile do
      {:plug, "~> 1.0"},
      {:uuid, "~> 1.1"},
 
-     {:erlcloud, "~> 0.12.0"},
+     {:erlcloud, "~> 0.12.0", only: [:test]},
+     {:httpoison, "~> 0.8.0", only: [:test]},
 
-     {:credo, "~> 0.2.0", only: [:dev, :test]}
+     {:credo, "~> 0.2.0", only: [:dev, :test]},
    ]
   end
 end

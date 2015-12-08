@@ -6,6 +6,8 @@ defmodule Vassal.QueueWorker do
   """
   use GenServer
 
+  alias Vassal.QueueProcessStore
+
   @doc """
   Starts a QueueWorker process as part of a supervision tree
 
@@ -28,7 +30,7 @@ defmodule Vassal.QueueWorker do
   - `queue_name` - The name of the queue this worker represents
   - `attrs` - The Queue attributes
   """
-  def init(queue_store, queue_name, attrs) do
+  def init([queue_store, queue_name, attrs]) do
     :ok = QueueProcessStore.add(queue_store, queue_name, self)
     {:ok, %{name: queue_name, attrs: attrs}}
   end
