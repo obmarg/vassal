@@ -42,7 +42,20 @@ defmodule Vassal.Results do
     @moduledoc """
     Error raised/returned to send an SQS error to the user.
     """
-    defexception code: "", type: "Sender"
+    defexception code: "", type: "Sender", message: "SQSError"
+
+    @doc """
+    Convenience method for raising exceptions.
+
+    Allows this:
+
+        raise SQSError, "SQS.SimpleQueueService.SomeError"
+
+    """
+    def exception(code) do
+      msg = "#{code}; See SQS Docs for more details"
+      %SQSError{message: msg, code: code}
+    end
   end
 
   defimpl Result, for: SQSError do

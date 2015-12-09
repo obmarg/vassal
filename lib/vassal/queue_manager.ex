@@ -21,7 +21,10 @@ defmodule Vassal.QueueManager do
   Gets the QueueManager to handle the provided action
   """
   def do_action(action) do
-    GenServer.call(__MODULE__, action)
+    case GenServer.call(__MODULE__, action) do
+      %SQSError{} = error -> raise error
+      result -> result
+    end
   end
 
   @doc """

@@ -34,9 +34,19 @@ defmodule VassalTest do
     resp = HTTPoison.get!(
       "http://localhost:4567/?Action=GetQueueUrl&QueueName=#{q_name}"
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 400
     assert String.contains?(resp.body,
                             "AWS.SimpleQueueService.NonExistentQueue")
+  end
+
+  test "invalid action" do
+    HTTPoison.start
+    resp = HTTPoison.get!(
+      "http://localhost:4567/?Action=What"
+    )
+    assert resp.status_code == 400
+    assert String.contains?(resp.body,
+                            "AWS.SimpleQueueService.InvalidAction")
   end
 
   defp config do

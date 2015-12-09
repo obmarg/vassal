@@ -97,6 +97,7 @@ defmodule Vassal.Actions do
     case params["Action"] do
       "CreateQueue" -> CreateQueue.from_params(params)
       "GetQueueUrl" -> GetQueueUrl.from_params(params)
+      _ -> raise Vassal.Results.SQSError, "AWS.SimpleQueueService.InvalidAction"
     end
   end
 

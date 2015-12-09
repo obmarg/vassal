@@ -2,6 +2,7 @@ defmodule Vassal.WebRouter do
   @moduledoc """
   This module provides the HTTP endpoint for SQS emulation.
   """
+  require Logger
 
   use Plug.Router
   use Plug.ErrorHandler
@@ -46,5 +47,14 @@ defmodule Vassal.WebRouter do
     conn
     |> put_resp_header("content-type", "application/xml")
     |> send_resp(400, Vassal.Results.Result.to_xml(error))
+  end
+  defp handle_errors(conn, %{reason: unknown}) do
+    Logger.error("Unknown Error:")
+    Logger.error(unknown)
+    conn
+    |> put_resp_header("content-type", "application/xml")
+    |> send_resp(400, Vassal.Results.Result.to_xml(
+          %Vassal.Results.SQSError{code: "AWS.SimpleQueueService.Unknown"}
+        ))
   end
 end
