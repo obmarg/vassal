@@ -5,5 +5,5 @@
             <%= result.queue_url %>
         </QueueUrl>
     </CreateQueueResult>
-    <%= Vassal.Results.response_metadata %>
+    <%= Vassal.Actions.response_metadata %>
 </CreateQueueResponse>

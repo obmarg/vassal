@@ -5,10 +5,8 @@ defmodule Vassal.QueueManager do
   use GenServer
 
   alias Vassal.Actions.CreateQueue
-  alias Vassal.Results.CreateQueueResult
   alias Vassal.Actions.GetQueueUrl
-  alias Vassal.Results.GetQueueUrlResult
-  alias Vassal.Results.SQSError
+  alias Vassal.Errors.SQSError
 
   @doc """
   Start the queue manager GenServer.
@@ -44,7 +42,7 @@ defmodule Vassal.QueueManager do
   def handle_call(%CreateQueue{queue_name: queue_name, attributes: attrs},
                   _from, state) do
     start_child(queue_name, attrs, state.supervisor)
-    {:reply, %CreateQueueResult{queue_url: queue_url(queue_name)}, state}
+    {:reply, %CreateQueue.Result{queue_url: queue_url(queue_name)}, state}
   end
 
   @doc """
@@ -53,7 +51,7 @@ defmodule Vassal.QueueManager do
   def handle_call(%GetQueueUrl{queue_name: queue_name}, _from, state) do
     queue_pid = Vassal.QueueProcessStore.lookup(state.queue_store, queue_name)
     result = if queue_pid != nil do
-      %GetQueueUrlResult{queue_url: queue_url(queue_name)}
+      %GetQueueUrl.Result{queue_url: queue_url(queue_name)}
     else
       %SQSError{code: "AWS.SimpleQueueService.NonExistentQueue"}
     end

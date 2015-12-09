@@ -16,7 +16,8 @@ defmodule Vassal.WebRouter do
   plug :match
   plug :dispatch
 
-  alias Vassal.Results.SQSError
+  alias Vassal.Errors.SQSError
+  alias Vassal.Actions
 
   def init(_options) do
     []
@@ -37,24 +38,24 @@ defmodule Vassal.WebRouter do
   defp handle_general_request(%{params: params}) do
     # Routes non queue-specific requests.
     params
-    |> Vassal.Actions.params_to_action
-    |> Vassal.Actions.valid!
+    |> Actions.params_to_action
+    |> Actions.valid!
     |> Vassal.QueueManager.do_action
-    |> Vassal.Results.Result.to_xml
+    |> Actions.Response.from_result
   end
 
-  defp handle_errors(conn, %{reason: %Vassal.Results.SQSError{} = error}) do
+  defp handle_errors(conn, %{reason: %SQSError{} = error}) do
     conn
     |> put_resp_header("content-type", "application/xml")
-    |> send_resp(400, Vassal.Results.Result.to_xml(error))
+    |> send_resp(400, Actions.Response.from_result(error))
   end
   defp handle_errors(conn, %{reason: unknown}) do
     Logger.error("Unknown Error:")
-    Logger.error(unknown)
+    Logger.error(inspect unknown)
     conn
     |> put_resp_header("content-type", "application/xml")
-    |> send_resp(400, Vassal.Results.Result.to_xml(
-          %Vassal.Results.SQSError{code: "AWS.SimpleQueueService.Unknown"}
+    |> send_resp(400, Actions.Response.from_result(
+          %SQSError{code: "AWS.SimpleQueueService.Unknown"}
         ))
   end
 end

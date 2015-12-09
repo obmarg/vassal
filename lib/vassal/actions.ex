@@ -1,17 +1,37 @@
 defmodule Vassal.Actions do
   @moduledoc """
-  Defines a number of structs that represent SQS API actions.
+  This module contains the structs that represent API actions & their results.
 
-  Implements parsing & validation of these structs from incoming parameters.
+  It also defines some protocols & functions for parsing those actions,
+  validating that they are correct, and serializing responses to XML.
+
+  Each individual action struct is responsible for implementing each of the
+  protocols required.
   """
-  defmodule InvalidActionError do
-    @moduledoc """
-    Error thrown when an invalid action is attempted.
-    """
-    defexception message: "Invalid action!"
+
+  @doc """
+  Converts incoming parameters into an action.
+  """
+  def params_to_action(params) do
+    case params["Action"] do
+      "CreateQueue" -> Vassal.Actions.CreateQueue.from_params(params)
+      "GetQueueUrl" -> Vassal.Actions.GetQueueUrl.from_params(params)
+      _ -> raise Vassal.Errors.SQSError, "AWS.SimpleQueueService.InvalidAction"
+    end
   end
 
-  defprotocol ActionValidation do
+  @doc """
+  Chckes if an action is valid, and raises an InvalidActionError if not.
+  """
+  def valid!(action) do
+    if Vassal.Actions.ActionValidator.valid?(action) do
+      action
+    else
+      raise Vassal.Errors.InvalidActionError
+    end
+  end
+
+  defprotocol ActionValidator do
     @doc """
     Returns true if the actions data is valid.
     """
@@ -19,86 +39,8 @@ defmodule Vassal.Actions do
     def valid?(action)
   end
 
-  defimpl ActionValidation, for: Any do
+  defimpl ActionValidator, for: Any do
     def valid?(action), do: true
-  end
-
-  def valid!(action) do
-    if Vassal.Actions.ActionValidation.valid?(action) do
-      action
-    else
-      raise InvalidActionError
-    end
-  end
-
-  defmodule CreateQueue do
-    @moduledoc """
-    Action for creating a Queue if it doesn't exist.
-    """
-
-    @derive [Inspect]
-    defstruct queue_name: nil, attributes: %{}
-
-    @type t :: %CreateQueue{queue_name: String.t,
-                            attributes: %{:atom => String.t}}
-
-    # We define these here because they're allowed, but we do nothing with them.
-    @ignored_attrs [:policy,
-                    :visibility_timeout,
-                    :maximum_message_size,
-                    :message_retention_period,
-                    :delay_seconds,
-                    :receive_message_wait_time_seconds,
-                    :redrive_policy]
-
-    def from_params(params) do
-      %CreateQueue{queue_name: params["QueueName"],
-                   attributes: parse_attrs(params)}
-    end
-
-    defp parse_attrs(params) do
-      params
-      |> Enum.filter(fn ({p, _}) -> String.contains?(p, "Attribute.") end)
-      |> Enum.sort_by(fn ({param, _}) -> param end)
-      |> Enum.map(fn ({_, value}) -> value end)
-      |> Enum.chunk(2)
-      |> Enum.map(fn ([key, val]) -> {String.to_existing_atom(key), val} end)
-      |> Enum.into(%{})
-    end
-  end
-
-  defimpl ActionValidation, for: CreateQueue do
-    def valid?(action) do
-      Vassal.Actions.valid_queue_name?(action.queue_name)
-    end
-  end
-
-  defmodule GetQueueUrl do
-    @moduledoc """
-    Action for getting the URL of a queue if it exists.
-    """
-    defstruct queue_name: nil
-
-    def from_params(params) do
-      %GetQueueUrl{queue_name: params["QueueName"]}
-    end
-  end
-
-  defimpl ActionValidation, for: GetQueueUrl do
-    def valid?(action) do
-      Vassal.Actions.valid_queue_name?(action.queue_name)
-    end
-  end
-
-  @doc """
-  Converts incoming parameters into an action.
-  """
-  def params_to_action(params) do
-    case params["Action"] do
-      "CreateQueue" -> CreateQueue.from_params(params)
-      "GetQueueUrl" -> GetQueueUrl.from_params(params)
-      _ -> raise Vassal.Results.SQSError, "AWS.SimpleQueueService.InvalidAction"
-    end
   end
 
   @doc """
@@ -108,4 +50,23 @@ defmodule Vassal.Actions do
     Regex.match?(~r/[\w-]{1,80}/, queue_name)
   end
 
+  defprotocol Response do
+    @doc """
+    Converts a result struct into XML suitable for response.
+    """
+    def from_result(result)
+  end
+
+  @moduledoc """
+  Utility function for adding response metadata into our response XML.
+  """
+  def response_metadata do
+    """
+    <ResponseMetadata>
+        <RequestId>
+           #{UUID.uuid4}
+        </RequestId>
+    </ResponseMetadata>
+    """
+  end
 end
