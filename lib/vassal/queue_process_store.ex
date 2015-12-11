@@ -52,10 +52,13 @@ defmodule Vassal.QueueProcessStore do
     {:reply, :ok, %{state | queues_by_pid: queues_by_pid}}
   end
 
-  def handle_info({'DOWN', _, _, pid, _down_info}, state) do
+  def handle_info({:DOWN, _, _, pid, _down_info}, state) do
     # Technically this can happen on timeout, so we should maybe be careful...
     :ets.delete(state.name, state.queues_by_pid[pid])
     queues_by_pid = Dict.delete(state.queues_by_pid, pid)
     {:noreply, %{state | queues_by_pid: queues_by_pid}}
+  end
+
+  def handle_info(_) do
   end
 end

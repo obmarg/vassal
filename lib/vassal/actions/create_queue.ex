@@ -11,15 +11,6 @@ defmodule Vassal.Actions.CreateQueue do
     attributes: %{:atom => String.t}
   }
 
-  # We define these here because they're allowed, but we do nothing with them.
-  @ignored_attrs [:policy,
-                  :visibility_timeout,
-                  :maximum_message_size,
-                  :message_retention_period,
-                  :delay_seconds,
-                  :receive_message_wait_time_seconds,
-                  :redrive_policy]
-
   def from_params(params) do
     %__MODULE__{queue_name: params["QueueName"],
                 attributes: parse_attrs(params)}
@@ -31,13 +22,19 @@ defmodule Vassal.Actions.CreateQueue do
     |> Enum.sort_by(fn ({param, _}) -> param end)
     |> Enum.map(fn ({_, value}) -> value end)
     |> Enum.chunk(2)
-    |> Enum.map(fn ([key, val]) -> {String.to_existing_atom(key), val} end)
+    |> Enum.map(fn ([key, val]) -> {attr_name_to_atom(key), val} end)
     |> Enum.into(%{})
+  end
+
+  defp attr_name_to_atom(attr_name) do
+    attr_name |> Mix.Utils.underscore |> String.to_existing_atom
   end
 
   defimpl Vassal.Actions.ActionValidator, for: __MODULE__ do
     def valid?(action) do
       Vassal.Actions.valid_queue_name?(action.queue_name)
+      and
+      Vassal.Actions.valid_attributes?(action.attributes)
     end
   end
 

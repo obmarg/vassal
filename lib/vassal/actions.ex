@@ -32,6 +32,10 @@ defmodule Vassal.Actions do
   end
 
   defprotocol ActionValidator do
+    @moduledoc """
+    Validates the data in an action.
+    """
+
     @doc """
     Returns true if the actions data is valid.
     """
@@ -50,10 +54,31 @@ defmodule Vassal.Actions do
     Regex.match?(~r/[\w-]{1,80}/, queue_name)
   end
 
+  @valid_attrs Enum.into HashSet.new, [:policy,
+                                       :visibility_timeout,
+                                       :maximum_message_size,
+                                       :message_retention_period,
+                                       :delay_seconds,
+                                       :receive_message_wait_time_seconds,
+                                       :redrive_policy]
+
+  @doc """
+  Validates a set of attributes.
+
+  Some of these may not be valid attributes for this operation, but those should
+  just be ignored.
+  """
+  def valid_attributes?(attrs) do
+    attrs
+    |> Dict.keys
+    |> Enum.all?(&(Set.member?(@valid_attrs, &1)))
+  end
+
   defprotocol Response do
-    @doc """
-    Converts a result struct into XML suitable for response.
+    @moduledoc """
+    Handles converting result structs into response XML.
     """
+
     def from_result(result)
   end
 
