@@ -4,6 +4,7 @@
   "cowlib": {:hex, :cowlib, "1.0.2"},
   "credo": {:hex, :credo, "0.2.1"},
   "erlcloud": {:hex, :erlcloud, "0.12.0"},
+  "fsm": {:hex, :fsm, "0.2.0"},
   "hackney": {:hex, :hackney, "1.4.7"},
   "httpoison": {:hex, :httpoison, "0.8.0"},
   "idna": {:hex, :idna, "1.0.2"},

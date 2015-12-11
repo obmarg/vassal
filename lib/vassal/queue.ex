@@ -35,6 +35,8 @@ defmodule Vassal.Queue do
   def init([queue_store, queue_name, attrs]) do
     :ok = QueueProcessStore.add(queue_store, queue_name, self)
 
+    {:ok, queue_messages_pid} = QueueMessages.start_link()
+
     {:ok, %{name: queue_name,
             attrs: attrs,
             queue_messages: queue_messages_pid}}

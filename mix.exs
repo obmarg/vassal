@@ -31,6 +31,7 @@ defmodule Vassal.Mixfile do
     [{:cowboy, "~> 1.0.0"},
      {:plug, "~> 1.0"},
      {:uuid, "~> 1.1"},
+     {:fsm, "~> 0.2.0"},
 
      {:erlcloud, "~> 0.12.0", only: [:test]},
      {:httpoison, "~> 0.8.0", only: [:test]},
