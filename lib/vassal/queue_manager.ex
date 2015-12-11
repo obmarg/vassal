@@ -60,10 +60,10 @@ defmodule Vassal.QueueManager do
 
   defp start_queue_supervisor(queue_store) do
     import Supervisor.Spec
-    alias Vassal.QueueWorker
+    alias Vassal.Queue
 
     children = [
-      worker(QueueWorker, [queue_store], restart: :transient)
+      worker(Queue, [queue_store], restart: :transient)
     ]
 
     {:ok, sup} = Supervisor.start_link(children, strategy: :simple_one_for_one)

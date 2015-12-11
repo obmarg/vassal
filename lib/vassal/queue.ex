@@ -1,15 +1,17 @@
-defmodule Vassal.QueueWorker do
+defmodule Vassal.Queue do
   @moduledoc """
-  The main worker process for a Queue.
+  The module that manages queues.
 
-  Handles any incoming messages related to this queue.
+  This module itself defines a GenServer that manages all the processes related
+  to a Queue and it's messages.
   """
   use GenServer
 
   alias Vassal.QueueProcessStore
+  alias Vassal.Queue.QueueMessages
 
   @doc """
-  Starts a QueueWorker process as part of a supervision tree
+  Starts a Queue process as part of a supervision tree
 
   ### Params
 
@@ -22,7 +24,7 @@ defmodule Vassal.QueueWorker do
   end
 
   @doc """
-  Initialises a QueueWorker process.
+  Initialises a Queue process.
 
   ### Params
 
@@ -32,6 +34,10 @@ defmodule Vassal.QueueWorker do
   """
   def init([queue_store, queue_name, attrs]) do
     :ok = QueueProcessStore.add(queue_store, queue_name, self)
-    {:ok, %{name: queue_name, attrs: attrs}}
+
+    {:ok, %{name: queue_name,
+            attrs: attrs,
+            queue_messages: queue_messages_pid}}
   end
+
 end
