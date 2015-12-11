@@ -18,6 +18,7 @@ defmodule Vassal.WebRouter do
 
   alias Vassal.Errors.SQSError
   alias Vassal.Actions
+  alias Vassal.Queue
 
   def init(_options) do
     []
@@ -35,12 +36,33 @@ defmodule Vassal.WebRouter do
     |> send_resp(200, handle_general_request(conn))
   end
 
+  get "/:queue_name" do
+    IO.puts inspect conn
+    conn
+    |> put_resp_header("content-type", "application/xml")
+    |> send_resp(200, handle_queue_request(queue_name, conn))
+  end
+
+  post "/:queue_name" do
+    conn
+    |> put_resp_header("content-type", "application/xml")
+    |> send_resp(200, handle_queue_request(queue_name, conn))
+  end
+
   defp handle_general_request(%{params: params}) do
     # Routes non queue-specific requests.
     params
     |> Actions.params_to_action
     |> Actions.valid!
     |> Vassal.QueueManager.do_action
+    |> Actions.Response.from_result
+  end
+
+  defp handle_queue_request(queue_name, %{params: params}) do
+    params
+    |> Actions.params_to_action(queue_name)
+    |> Actions.valid!
+    |> Queue.do_action
     |> Actions.Response.from_result
   end
 

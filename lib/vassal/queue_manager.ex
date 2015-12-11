@@ -75,6 +75,6 @@ defmodule Vassal.QueueManager do
   end
 
   defp queue_url(queue_name) do
-    "#{Application.get_env(:vassal, :url)}/1234/#{queue_name}"
+    "#{Application.get_env(:vassal, :url)}/#{queue_name}"
   end
 end

@@ -23,7 +23,7 @@ defmodule VassalTest do
       "http://localhost:4567/?Action=GetQueueUrl&QueueName=#{q_name}"
     )
     assert resp.status_code == 200
-    assert String.contains?(resp.body, "http://localhost:4567/1234/#{q_name}")
+    assert String.contains?(resp.body, "http://localhost:4567/#{q_name}")
   end
 
   test "getting queue url for non existent queue" do
@@ -47,6 +47,12 @@ defmodule VassalTest do
     assert resp.status_code == 400
     assert String.contains?(resp.body,
                             "AWS.SimpleQueueService.InvalidAction")
+  end
+
+  test "sending a message" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    :erlcloud_sqs.send_message(q_name, 'abcd', config)
   end
 
   defp config do

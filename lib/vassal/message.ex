@@ -14,7 +14,7 @@ defmodule Vassal.Message do
     A struct that contains all the information about a message.
     """
 
-    defstruct delay: 0, visibility_timeout: 30 * 1000
+    defstruct delay_ms: 0, visibility_timeout_ms: 30 * 1000
   end
 
   defmodule StateMachine do
@@ -118,7 +118,8 @@ defmodule Vassal.Message do
   end
 
   def handle_info(:start_initial_timer, state) do
-    timer_ref = :erlang.start_timer(state.message.delay, self, :timer_expired)
+    timer_ref = :erlang.start_timer(state.message.delay_ms,
+                                    self, :timer_expired)
     {:noreply, Dict.put(state, :timer_ref, timer_ref)}
   end
 
@@ -137,7 +138,7 @@ defmodule Vassal.Message do
   end
 
   def handle_info(:start_visibility_timer, state) do
-    timer_ref = :erlang.start_timer(state.message.visibility_timeout,
+    timer_ref = :erlang.start_timer(state.message.visibility_timeout_ms,
                                     self,
                                     :timer_expired)
     {:noreply, Dict.put(state, :timer_ref, timer_ref)}

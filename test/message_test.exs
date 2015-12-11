@@ -14,7 +14,7 @@ defmodule VassalMessageTest do
 
   test "should add to queue immediately when no delay", context do
     {:ok, pid} = Message.start_link(context.queue,
-                                    %Message.MessageInfo{delay: 0})
+                                    %Message.MessageInfo{delay_ms: 0})
     :timer.sleep(10)
 
     assert_in_queue context, 1
@@ -22,7 +22,7 @@ defmodule VassalMessageTest do
 
   test "should add to queue after delay", context do
     {:ok, pid} = Message.start_link(context.queue,
-                                    %Message.MessageInfo{delay: 100})
+                                    %Message.MessageInfo{delay_ms: 100})
     :timer.sleep(10)
 
     assert_in_queue context, 0
@@ -34,7 +34,7 @@ defmodule VassalMessageTest do
   test "message can be received while in queue", context do
     {:ok, pid} = Message.start_link(
       context.queue,
-      %Message.MessageInfo{visibility_timeout: 100}
+      %Message.MessageInfo{visibility_timeout_ms: 100}
     )
 
     :timer.sleep(10)
@@ -45,7 +45,7 @@ defmodule VassalMessageTest do
   test "should be re-inserted to queue after visibility timeout", context do
     {:ok, pid} = Message.start_link(
       context.queue,
-      %Message.MessageInfo{visibility_timeout: 100}
+      %Message.MessageInfo{visibility_timeout_ms: 100}
     )
 
     :timer.sleep(10)
@@ -62,7 +62,7 @@ defmodule VassalMessageTest do
 
   test "should shutdown on delete when not in queue", context do
     {:ok, pid} = GenServer.start(
-      Message, [context.queue, %Message.MessageInfo{visibility_timeout: 10}]
+      Message, [context.queue, %Message.MessageInfo{visibility_timeout_ms: 10}]
     )
 
     :timer.sleep(10)
@@ -75,7 +75,7 @@ defmodule VassalMessageTest do
 
   test "should shutdown on send_data when in queue", context do
     {:ok, pid} = GenServer.start(
-      Message, [context.queue, %Message.MessageInfo{visibility_timeout: 10}]
+      Message, [context.queue, %Message.MessageInfo{visibility_timeout_ms: 10}]
     )
 
     :timer.sleep(10)

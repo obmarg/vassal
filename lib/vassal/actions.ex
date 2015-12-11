@@ -21,6 +21,16 @@ defmodule Vassal.Actions do
   end
 
   @doc """
+  Converts incoming parameters into a queue action.
+  """
+  def params_to_action(params, queue_name) do
+    case params["Action"] do
+      "SendMessage" -> Vassal.Actions.SendMessage.from_params(params,
+                                                              queue_name)
+    end
+  end
+
+  @doc """
   Chckes if an action is valid, and raises an InvalidActionError if not.
   """
   def valid!(action) do
