@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<ReceiveMessageResponse>
+    <ReceiveMessageResult>
+      <%= for message <- result.messsages do %>
+      <Message>
+        <MessageId>
+          <%= message.message_id %>
+        </MessageId>
+        <ReceiptHandle>
+          <%= message.receipt_handle %>
+        </ReceiptHandle>
+        <MD5OfBody>
+          <%= message.body_md5 %>
+        </MD5OfBody>
+        <%= for {attr_name, attr_val} <- message.attributes do %>
+        <Attribute> 
+          <Name><%= attr_name %></Name>
+          <Value><%= attr_name %></Value>
+        </Attribute> 
+        <% end %>
+      </Message>
+      <% end %>
+    </ReceiveMessageResult>
+    <%= Vassal.Actions.response_metadata %>
+</ReceiveMessageResponse>
