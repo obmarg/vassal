@@ -14,7 +14,11 @@ defmodule Vassal.Message do
     A struct that contains all the information about a message.
     """
 
-    defstruct delay_ms: 0, visibility_timeout_ms: 30 * 1000
+    defstruct [delay_ms: 0,
+               visibility_timeout_ms: 30 * 1000,
+               message_id: nil,
+               body_md5: nil,
+               body: nil]
   end
 
   defmodule StateMachine do
@@ -100,7 +104,7 @@ defmodule Vassal.Message do
   end
 
   def init([queue_messages_pid, message_info]) do
-    sm = Vassal.Message.StateMachine.new |> transition(:start)
+    sm = StateMachine.new |> StateMachine.start
     {:ok, %{state_machine: sm,
             message: message_info,
             queue_messages_pid: queue_messages_pid}}
@@ -110,7 +114,9 @@ defmodule Vassal.Message do
   # TODO: We also need a handle_call for deleting the message.
 
   def handle_call(:receive_message, _from, state) do
-    {:reply, {}, Dict.update!(state, :state_machine, &StateMachine.send_data/1)}
+    {:reply, state.message, Dict.update!(state,
+                                         :state_machine,
+                                         &StateMachine.send_data/1)}
   end
 
   def handle_call(:delete_message, _from, state) do
@@ -156,10 +162,4 @@ defmodule Vassal.Message do
     Logger.warning("Message received unknown message: #{inspect msg}")
     {:noreply, state}
   end
-
-  defp transition(state, transition) do
-    # TODO: Ditch this fn if we can, might be better to call convenience functions.
-    Vassal.Message.StateMachine.transition(state, transition, [])
-  end
-
 end

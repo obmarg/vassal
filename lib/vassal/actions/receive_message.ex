@@ -21,9 +21,9 @@ defmodule Vassal.Actions.ReceiveMessage do
   }
 
   def from_params(params, queue_name) do
-    {vis_secs, ""} = Integer.parse(Dict.get(params, :VisibilityTimeout, "30"))
-    {wait_secs, ""} = Integer.parse(Dict.get(params, :WaitTimeSeconds, "0"))
-    {max_msgs, ""} = Integer.parse(Dict.get(params, :MaxNumberOfMessages, "1"))
+    {vis_secs, ""} = Integer.parse(Dict.get(params, "VisibilityTimeout", "30"))
+    {wait_secs, ""} = Integer.parse(Dict.get(params, "WaitTimeSeconds", "0"))
+    {max_msgs, ""} = Integer.parse(Dict.get(params, "MaxNumberOfMessages", "1"))
 
     %__MODULE__{queue_name: queue_name,
                 max_messages: max_msgs,
@@ -50,6 +50,7 @@ defmodule Vassal.Actions.ReceiveMessage do
     defstruct [message_id: nil,
                receipt_handle: nil,
                body_md5: nil,
+               body: nil,
                attributes: %{}]
   end
 

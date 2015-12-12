@@ -24,6 +24,18 @@ defmodule Vassal.Queue.QueueMessages do
   end
 
   @doc """
+  Re-adds messages to the head of the queue.
+
+  This should only be used when some messages were de-queued, but failed to
+  actually be processed.
+  """
+  def requeue(queue_messages_pid, message_pids) do
+    Agent.update queue_messages_pid, fn (list) ->
+      Enum.reduce(message_pids, list, &(List.insert_at &2, 0, &1))
+    end
+  end
+
+  @doc """
   Removes some message processes from the queue.
   """
   def dequeue(queue_messages_pid, max_to_receive) do

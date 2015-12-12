@@ -1,17 +1,11 @@
 <?xml version="1.0"?>
 <SendMessageResponse>
     <SendMessageResult>
-        <MD5OfMessageBody>
-          <%= result.body_md5 %>
-        </MD5OfMessageBody>
+        <MD5OfMessageBody><%= result.body_md5 %></MD5OfMessageBody>
         <%= if result.attrs_md5 do %>
-        <MD5OfMessageAttributes>
-          <%= result.attrs_md5 %>
-        </MD5OfMessageAttributes>
+        <MD5OfMessageAttributes><%= result.attrs_md5 %></MD5OfMessageAttributes>
         <% end %>
-        <MessageId>
-          <%= result.message_id %>
-        </MessageId>
+        <MessageId><%= result.message_id %></MessageId>
     </SendMessageResult>
     <%= Vassal.Actions.response_metadata %>
 </SendMessageResponse>

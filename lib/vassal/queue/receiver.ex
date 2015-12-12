@@ -119,5 +119,4 @@ defmodule Vassal.Queue.Receiver do
                  :completed_requests,
                  &(Dict.put &1, resp_uuid, {messages, timer_ref}))
   end
-
 end

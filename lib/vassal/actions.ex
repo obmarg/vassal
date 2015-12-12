@@ -25,8 +25,10 @@ defmodule Vassal.Actions do
   """
   def params_to_action(params, queue_name) do
     case params["Action"] do
-      "SendMessage" -> Vassal.Actions.SendMessage.from_params(params,
-                                                              queue_name)
+      "SendMessage" ->
+        Vassal.Actions.SendMessage.from_params(params, queue_name)
+      "ReceiveMessage" ->
+        Vassal.Actions.ReceiveMessage.from_params(params, queue_name)
     end
   end
 
@@ -78,10 +80,12 @@ defmodule Vassal.Actions do
   Some of these may not be valid attributes for this operation, but those should
   just be ignored.
   """
-  def valid_attributes?(attrs) do
-    attrs
-    |> Dict.keys
-    |> Enum.all?(&(Set.member?(@valid_attrs, &1)))
+  def valid_attributes?(attrs) when is_map(attrs) do
+    attrs |> Dict.keys |> valid_attributes?
+  end
+
+  def valid_attributes?(attrs) when is_list(attrs) do
+    Enum.all?(attrs, &(Set.member?(@valid_attrs, &1)))
   end
 
   defprotocol Response do

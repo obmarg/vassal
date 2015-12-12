@@ -54,4 +54,3 @@ defmodule Vassal.Actions.CreateQueue do
     end
   end
 end
-

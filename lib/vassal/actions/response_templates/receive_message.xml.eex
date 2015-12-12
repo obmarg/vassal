@@ -1,17 +1,12 @@
 <?xml version="1.0"?>
 <ReceiveMessageResponse>
     <ReceiveMessageResult>
-      <%= for message <- result.messsages do %>
+      <%= for message <- result.messages do %>
       <Message>
-        <MessageId>
-          <%= message.message_id %>
-        </MessageId>
-        <ReceiptHandle>
-          <%= message.receipt_handle %>
-        </ReceiptHandle>
-        <MD5OfBody>
-          <%= message.body_md5 %>
-        </MD5OfBody>
+        <MessageId><%= message.message_id %></MessageId>
+        <ReceiptHandle><%= message.receipt_handle %></ReceiptHandle>
+        <MD5OfBody><%= message.body_md5 %></MD5OfBody>
+        <Body><%= message.body %></Body>
         <%= for {attr_name, attr_val} <- message.attributes do %>
         <Attribute> 
           <Name><%= attr_name %></Name>

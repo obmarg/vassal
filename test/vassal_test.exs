@@ -55,6 +55,38 @@ defmodule VassalTest do
     :erlcloud_sqs.send_message(q_name, 'abcd', config)
   end
 
+  test "receiving a message" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    send_resp = :erlcloud_sqs.send_message(q_name, 'abcd', config)
+    [messages: [message]] = :erlcloud_sqs.receive_message(q_name, [], 2, config)
+    assert message[:message_id] == send_resp[:message_id]
+    assert message[:body] == 'abcd'
+  end
+
+  test "receiving no messages" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    [messages: []] = :erlcloud_sqs.receive_message(q_name, [], 2, config)
+  end
+
+  test "receiving messages with wait" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    spawn_link(fn ->
+      :timer.sleep(500)
+      :erlcloud_sqs.send_message(q_name, 'abcd', config)
+      :erlcloud_sqs.send_message(q_name, 'abcd', config)
+    end)
+
+    [messages: [message1, message2]] = :erlcloud_sqs.receive_message(
+      q_name, [], 2, 30, 1, config
+    )
+    assert message1[:body] == 'abcd'
+    assert message2[:body] == 'abcd'
+    assert message1[:message_id] != message2[:message_id]
+  end
+
   defp config do
     aws_config(sqs_host: 'localhost',
                sqs_protocol: 'http',
