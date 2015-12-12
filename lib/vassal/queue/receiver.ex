@@ -18,7 +18,7 @@ defmodule Vassal.Queue.Receiver do
     @moduledoc """
     Struct that represents a single receive request.
     """
-    defstruct action: nil, from: nil
+    defstruct action: nil, from: nil, id: nil
   end
 
   @doc """
@@ -31,17 +31,23 @@ defmodule Vassal.Queue.Receiver do
   - `form` - The GenServer `from` parameter that should be used to reply.
   """
   def receive_messages(receiver, action) do
-    GenServer.cast(receiver, %ReceiveRequest{action: action, from: self})
+    req_id = UUID.uuid1
+    GenServer.cast(receiver, %ReceiveRequest{action: action,
+                                             from: self,
+                                             id: req_id})
+
     wait_time_ms = action.wait_time_ms
     if wait_time_ms == 0 do
       wait_time_ms = 500
     end
     receive do
-      {:response, uuid, messages} ->
-        :ok = GenServer.call(receiver, {:ack, uuid})
+      {:response, ^req_id, messages} ->
+        :ok = GenServer.call(receiver, {:ack, req_id})
         messages
     after
-      wait_time_ms -> []
+      wait_time_ms ->
+        GenServer.cast(receiver, {:cancel_request, req_id})
+        []
     end
   end
 
@@ -82,6 +88,13 @@ defmodule Vassal.Queue.Receiver do
                             &(List.insert_at &1, -1, request))}
   end
 
+  def handle_cast({:cancel_request, req_id}, state) do
+    new_requests = Enum.reject state.waiting_requests, fn (req) ->
+      req.id == req_id
+    end
+    {:noreply, %{state | waiting_requests: new_requests}}
+  end
+
   def handle_info(:poll, state) do
     {:noreply, attempt_receives(state)}
   end
@@ -111,12 +124,11 @@ defmodule Vassal.Queue.Receiver do
   @recv_ack_timeout_ms 5000
 
   defp reply_to_request(request, state, messages) do
-    resp_uuid = UUID.uuid1
-    send(request.from, {:response, resp_uuid, messages})
+    send(request.from, {:response, request.id, messages})
     timer_ref = :erlang.send_after(@recv_ack_timeout_ms, self,
-                                   {:ack_timeout, resp_uuid})
+                                   {:ack_timeout, request.id})
     Dict.update!(state,
                  :completed_requests,
-                 &(Dict.put &1, resp_uuid, {messages, timer_ref}))
+                 &(Dict.put &1, request.id, {messages, timer_ref}))
   end
 end
