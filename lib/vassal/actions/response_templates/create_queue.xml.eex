@@ -1,9 +1,7 @@
 <?xml version="1.0"?>
 <CreateQueueResponse>
     <CreateQueueResult>
-        <QueueUrl>
-            <%= result.queue_url %>
-        </QueueUrl>
+        <QueueUrl><%= result.queue_url %></QueueUrl>
     </CreateQueueResult>
     <%= Vassal.Actions.response_metadata %>
 </CreateQueueResponse>

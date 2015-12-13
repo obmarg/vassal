@@ -9,6 +9,8 @@ defmodule Vassal.Actions do
   protocols required.
   """
 
+  require Logger
+
   @doc """
   Converts incoming parameters into an action.
   """
@@ -16,7 +18,9 @@ defmodule Vassal.Actions do
     case params["Action"] do
       "CreateQueue" -> Vassal.Actions.CreateQueue.from_params(params)
       "GetQueueUrl" -> Vassal.Actions.GetQueueUrl.from_params(params)
-      _ -> raise Vassal.Errors.SQSError, "AWS.SimpleQueueService.InvalidAction"
+      _ ->
+        Logger.error("Unknown action #{params["Action"]}")
+        raise Vassal.Errors.SQSError, "AWS.SimpleQueueService.InvalidAction"
     end
   end
 
@@ -33,7 +37,9 @@ defmodule Vassal.Actions do
         Vassal.Actions.DeleteMessage.from_params(params, queue_name)
       "ChangeMessageVisibility" ->
         Vassal.Actions.ChangeMessageVisibility.from_params(params, queue_name)
-      _ -> raise Vassal.Errors.SQSError, "AWS.SimpleQueueService.InvalidAction"
+      _ ->
+        Logger.error("Unknown action #{params["Action"]}")
+        raise Vassal.Errors.SQSError, "AWS.SimpleQueueService.InvalidAction"
     end
   end
 

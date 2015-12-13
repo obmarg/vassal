@@ -37,7 +37,6 @@ defmodule Vassal.WebRouter do
   end
 
   get "/:queue_name" do
-    IO.puts inspect conn
     conn
     |> put_resp_header("content-type", "application/xml")
     |> send_resp(200, handle_queue_request(queue_name, conn))
@@ -49,17 +48,25 @@ defmodule Vassal.WebRouter do
     |> send_resp(200, handle_queue_request(queue_name, conn))
   end
 
-  defp handle_general_request(%{params: params}) do
-    # Routes non queue-specific requests.
-    params
-    |> Actions.params_to_action
-    |> Actions.valid!
-    |> Vassal.QueueManager.do_action
-    |> Actions.Response.from_result
+  defp handle_general_request(%{params: params} = conn) do
+    if Dict.has_key?(params, "QueueUrl") do
+      # This is actually a queue request, lets forward it on...
+      queue_name = params["QueueUrl"] |> String.split("/") |> List.last
+      handle_queue_request(queue_name, conn)
+    else
+      # Route non queue-specific requests.
+      params
+      |> log_action
+      |> Actions.params_to_action
+      |> Actions.valid!
+      |> Vassal.QueueManager.do_action
+      |> Actions.Response.from_result
+    end
   end
 
   defp handle_queue_request(queue_name, %{params: params}) do
     params
+    |> log_action
     |> Actions.params_to_action(queue_name)
     |> Actions.valid!
     |> Queue.do_action
@@ -79,5 +86,13 @@ defmodule Vassal.WebRouter do
     |> send_resp(400, Actions.Response.from_result(
           %SQSError{code: "AWS.SimpleQueueService.Unknown"}
         ))
+  end
+
+  defp log_action(params) do
+    if Mix.env != :test do
+      # Don't log when we're testing as it obscures test output.
+      Logger.info "Handling #{params["Action"]} action."
+    end
+    params
   end
 end
