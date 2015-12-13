@@ -15,7 +15,7 @@ defmodule Vassal.Message do
     """
 
     defstruct [delay_ms: 0,
-               visibility_timeout_ms: 30 * 1000,
+               default_visibility_timeout_ms: 30 * 1000,
                message_id: nil,
                body_md5: nil,
                body: nil]
@@ -51,8 +51,8 @@ defmodule Vassal.Message do
     end
 
     defstate queued do
-      defevent send_data do
-        send(self, :start_visibility_timer)
+      defevent send_data(visibility_timeout_ms) do
+        send(self, {:start_visibility_timer, visibility_timeout_ms})
         next_state(:processing)
       end
       defevent delete do
@@ -72,7 +72,7 @@ defmodule Vassal.Message do
     end
 
     defstate awaiting_delete do
-      defevent send_data do
+      defevent send_data(_) do
         send(self, :finish)
       end
     end
@@ -88,8 +88,8 @@ defmodule Vassal.Message do
   @doc """
   Returns a messages data and starts it's visibility timer
   """
-  def receive_message(message_pid) do
-    GenServer.call(message_pid, :receive_message)
+  def receive_message(message_pid, visibility_timeout_ms) do
+    GenServer.call(message_pid, {:receive_message, visibility_timeout_ms})
   end
 
   @doc """
@@ -110,13 +110,15 @@ defmodule Vassal.Message do
             queue_messages_pid: queue_messages_pid}}
   end
 
-  # TODO: We need a handle_call for getting the message data...
-  # TODO: We also need a handle_call for deleting the message.
+  def handle_call({:receive_message, vis_timeout_ms}, _from, state) do
+    reply = state.message
+    if state.state_machine.state == :awaiting_delete do
+      reply = nil
+    end
 
-  def handle_call(:receive_message, _from, state) do
-    {:reply, state.message, Dict.update!(state,
-                                         :state_machine,
-                                         &StateMachine.send_data/1)}
+    {:reply, reply, Dict.update!(state,
+                                 :state_machine,
+                                 &(StateMachine.send_data &1, vis_timeout_ms))}
   end
 
   def handle_call(:delete_message, _from, state) do
@@ -143,10 +145,12 @@ defmodule Vassal.Message do
     {:noreply, state}
   end
 
-  def handle_info(:start_visibility_timer, state) do
-    timer_ref = :erlang.start_timer(state.message.visibility_timeout_ms,
-                                    self,
-                                    :timer_expired)
+  def handle_info({:start_visibility_timer, timer_len}, state) do
+    if timer_len == :nil do
+      timer_len = state.message.default_visibility_timeout_ms
+    end
+
+    timer_ref = :erlang.start_timer(timer_len, self, :timer_expired)
     {:noreply, Dict.put(state, :timer_ref, timer_ref)}
   end
 

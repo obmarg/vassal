@@ -10,8 +10,10 @@ defmodule Vassal.Queue do
   alias Vassal.QueueProcessStore
   alias Vassal.Queue.QueueMessages
   alias Vassal.Queue.Receiver
+  alias Vassal.Queue.ReceiptHandles
   alias Vassal.Actions.SendMessage
   alias Vassal.Actions.ReceiveMessage
+  alias Vassal.Actions.DeleteMessage
   alias Vassal.Errors.SQSError
   alias Vassal.Message
 
@@ -21,13 +23,18 @@ defmodule Vassal.Queue do
   def do_action(action, queue_process_store \\ Vassal.QueueProcessStore)
 
   def do_action(%ReceiveMessage{} = action, queue_process_store) do
-    messages =
+    {receiver, receipt_handles} =
       action.queue_name
         |> lookup_queue_worker(queue_process_store)
-        |> GenServer.call(:get_receiver)
+        |> GenServer.call(:get_receiving_pids)
+
+    vis_timeout = action.visibility_timeout_ms
+
+    messages =
+      receiver
         |> Receiver.receive_messages(action)
-        |> Enum.map(&Message.receive_message/1)
-        |> Enum.map(&message_info_to_receive_result/1)
+        |> Enum.map(&(recv_message_from_pid &1, receipt_handles, vis_timeout))
+        |> Enum.filter(fn (x) -> x end)
 
     %ReceiveMessage.Result{messages: messages}
   end
@@ -69,11 +76,14 @@ defmodule Vassal.Queue do
 
     {:ok, receiver} = Receiver.start_link(queue_messages_pid)
 
+    {:ok, receipt_handles} = ReceiptHandles.start_link
+
     {:ok, %{name: queue_name,
             attrs: attrs,
             queue_messages: queue_messages_pid,
             message_supervisor: message_supervisor,
-            receiver: receiver}}
+            receiver: receiver,
+            receipt_handles: receipt_handles}}
   end
 
   def handle_call(%SendMessage{} = send_message, _from, state) do
@@ -88,8 +98,19 @@ defmodule Vassal.Queue do
     {:reply, result, state}
   end
 
-  def handle_call(:get_receiver, _from, state) do
-    {:reply, state.receiver, state}
+  def handle_call(%DeleteMessage{} = delete_message, _from, state) do
+    state.receipt_handles
+    |> ReceiptHandles.get_pid_from_handle(delete_message.receipt_handle)
+    |> Message.delete_message
+
+    ReceiptHandles.delete_handle(state.receipt_handles,
+                                 delete_message.receipt_handle)
+
+    {:reply, %DeleteMessage.Result{}, state}
+  end
+
+  def handle_call(:get_receiving_pids, _from, state) do
+    {:reply, {state.receiver, state.receipt_handles}, state}
   end
 
   defp start_message_supervisor(queue_messages_pid) do
@@ -111,14 +132,19 @@ defmodule Vassal.Queue do
     pid
   end
 
-  defp message_info_to_receive_result(message_info) do
-    %ReceiveMessage.Message{
-      message_id: message_info.message_id,
-      receipt_handle: "todo",
-      body_md5: message_info.body_md5,
-      body: message_info.body,
-      attributes: %{}
-    }
+  defp recv_message_from_pid(message_pid, receipt_handles_pid, vis_timeout) do
+    message_info = Message.receive_message(message_pid, vis_timeout)
+    if message_info != nil do
+      %ReceiveMessage.Message{
+        message_id: message_info.message_id,
+        receipt_handle: ReceiptHandles.create_receipt(receipt_handles_pid,
+                                                      message_pid),
+        body_md5: message_info.body_md5,
+        body: message_info.body,
+        attributes: %{}
+      }
+    else
+      nil
+    end
   end
-
 end

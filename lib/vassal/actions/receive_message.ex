@@ -6,7 +6,7 @@ defmodule Vassal.Actions.ReceiveMessage do
   @derive [Inspect]
   defstruct [queue_name: nil,
              max_messages: 1,
-             visibility_timeout_ms: 30 * 1000,
+             visibility_timeout_ms: nil,
              wait_time_ms: 0,
              attributes: [],
              message_attributes: []]
@@ -14,20 +14,26 @@ defmodule Vassal.Actions.ReceiveMessage do
   @type t :: %__MODULE__{
     queue_name: String.t,
     max_messages: non_neg_integer,
-    visibility_timeout_ms: non_neg_integer,
+    visibility_timeout_ms: non_neg_integer | nil,
     wait_time_ms: non_neg_integer,
     attributes: [:atom],
     message_attributes: [:atom]
   }
 
   def from_params(params, queue_name) do
-    {vis_secs, ""} = Integer.parse(Dict.get(params, "VisibilityTimeout", "30"))
+    vis_secs = Dict.get(params, "VisibilityTimeout", nil)
+    if vis_secs != nil do
+      {vis_secs, ""} = Integer.parse(vis_secs)
+      vis_ms = vis_secs * 1000
+    else
+      vis_ms = nil
+    end
     {wait_secs, ""} = Integer.parse(Dict.get(params, "WaitTimeSeconds", "0"))
     {max_msgs, ""} = Integer.parse(Dict.get(params, "MaxNumberOfMessages", "1"))
 
     %__MODULE__{queue_name: queue_name,
                 max_messages: max_msgs,
-                visibility_timeout_ms: vis_secs * 1000,
+                visibility_timeout_ms: vis_ms,
                 wait_time_ms: wait_secs * 1000,
                 attributes: [],
                 message_attributes: []}

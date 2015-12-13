@@ -87,6 +87,43 @@ defmodule VassalTest do
     assert message1[:message_id] != message2[:message_id]
   end
 
+  test "re-receive message after visibility timeout" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    send_resp = :erlcloud_sqs.send_message(q_name, 'abcd', config)
+
+    [messages: [message]] = :erlcloud_sqs.receive_message(
+      q_name, [], 2, 1, config
+    )
+
+    assert message[:body] == 'abcd'
+    assert message[:message_id] == send_resp[:message_id]
+    :timer.sleep(1500)
+
+    [messages: [message]] = :erlcloud_sqs.receive_message(
+      q_name, [], 2, 1, config
+    )
+    assert message[:body] == 'abcd'
+    assert message[:message_id] == send_resp[:message_id]
+  end
+
+  test "deleting a message" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    send_resp = :erlcloud_sqs.send_message(q_name, 'abcd', config)
+
+    [messages: [message]] = :erlcloud_sqs.receive_message(
+      q_name, [], 2, 1, config
+    )
+
+    assert message[:body] == 'abcd'
+    assert message[:message_id] == send_resp[:message_id]
+    :erlcloud_sqs.delete_message(q_name, message[:receipt_handle], config)
+    :timer.sleep(1500)
+
+    [messages: []] = :erlcloud_sqs.receive_message(q_name, [], 2, 1, config)
+  end
+
   defp config do
     aws_config(sqs_host: 'localhost',
                sqs_protocol: 'http',

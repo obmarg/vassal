@@ -32,20 +32,20 @@ defmodule VassalMessageTest do
   end
 
   test "message can be received while in queue", context do
-    message = %Message.MessageInfo{visibility_timeout_ms: 100}
+    message = %Message.MessageInfo{default_visibility_timeout_ms: 100}
     {:ok, pid} = Message.start_link(context.queue, message)
 
     :timer.sleep(10)
-    ^message = Message.receive_message(pid)
+    ^message = Message.receive_message(pid, nil)
   end
 
   test "should be re-inserted to queue after visibility timeout", context do
-    message = %Message.MessageInfo{visibility_timeout_ms: 100}
+    message = %Message.MessageInfo{default_visibility_timeout_ms: 100}
     {:ok, pid} = Message.start_link(context.queue, message)
 
     :timer.sleep(10)
     [_] = QueueMessages.dequeue(context.queue, 1)
-    ^message = Message.receive_message(pid)
+    ^message = Message.receive_message(pid, nil)
     :timer.sleep(80)
 
     assert_in_queue(context, 0)
@@ -55,11 +55,11 @@ defmodule VassalMessageTest do
   end
 
   test "should shutdown on delete when not in queue", context do
-    message = %Message.MessageInfo{visibility_timeout_ms: 10}
+    message = %Message.MessageInfo{default_visibility_timeout_ms: 10}
     {:ok, pid} = GenServer.start(Message, [context.queue, message])
 
     :timer.sleep(10)
-    ^message = Message.receive_message(pid)
+    ^message = Message.receive_message(pid, nil)
     :ok = Message.delete_message(pid)
     :timer.sleep(5)
 
@@ -67,11 +67,11 @@ defmodule VassalMessageTest do
   end
 
   test "should shutdown on send_data when in queue", context do
-    message = %Message.MessageInfo{visibility_timeout_ms: 10}
+    message = %Message.MessageInfo{default_visibility_timeout_ms: 10}
     {:ok, pid} = GenServer.start(Message, [context.queue, message])
 
     :timer.sleep(10)
-    ^message = Message.receive_message(pid)
+    ^message = Message.receive_message(pid, nil)
 
     # Wait until we have been re-added to the queue...
     :timer.sleep(30)
@@ -81,7 +81,7 @@ defmodule VassalMessageTest do
 
     assert Process.alive?(pid)
 
-    ^message = Message.receive_message(pid)
+    nil = Message.receive_message(pid, nil)
     :timer.sleep(10)
 
     refute Process.alive?(pid)

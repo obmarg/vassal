@@ -29,6 +29,8 @@ defmodule Vassal.Queue.Receiver do
   - `receiver` - The receiver to tell about this request.
   - `action` - The ReceiveMessage action representing the request.
   - `form` - The GenServer `from` parameter that should be used to reply.
+
+  Returns a list of message PIDs that can be queried for their data.
   """
   def receive_messages(receiver, action) do
     req_id = UUID.uuid1
@@ -41,9 +43,9 @@ defmodule Vassal.Queue.Receiver do
       wait_time_ms = 500
     end
     receive do
-      {:response, ^req_id, messages} ->
+      {:response, ^req_id, message_pids} ->
         :ok = GenServer.call(receiver, {:ack, req_id})
-        messages
+        message_pids
     after
       wait_time_ms ->
         GenServer.cast(receiver, {:cancel_request, req_id})
