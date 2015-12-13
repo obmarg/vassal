@@ -103,6 +103,13 @@ defmodule Vassal.Message do
     GenServer.call(message_pid, :delete_message)
   end
 
+  @doc """
+  Changes the visibility timeout of a message.
+  """
+  def change_visibility_timeout(message_pid, timeout_ms) do
+    GenServer.call(message_pid, {:change_visibility_timeout, timeout_ms})
+  end
+
   def init([queue_messages_pid, message_info]) do
     sm = StateMachine.new |> StateMachine.start
     {:ok, %{state_machine: sm,
@@ -123,6 +130,19 @@ defmodule Vassal.Message do
 
   def handle_call(:delete_message, _from, state) do
     {:reply, :ok, Dict.update!(state, :state_machine, &StateMachine.delete/1)}
+  end
+
+  def handle_call({:change_visibility_timeout, timeout_ms}, _from, state) do
+    if state.state_machine.state == :processing do
+      old_ms = :erlang.read_timer(state.timer_ref)
+      if old_ms do
+        :erlang.cancel_timer(state.timer_ref)
+        timer_ref = :erlang.start_timer(old_ms + timeout_ms,
+                                        self, :timer_expired)
+        state = %{state | timer_ref: timer_ref}
+      end
+    end
+    {:reply, :ok, state}
   end
 
   def handle_info(:start_initial_timer, state) do

@@ -31,6 +31,8 @@ defmodule Vassal.Actions do
         Vassal.Actions.ReceiveMessage.from_params(params, queue_name)
       "DeleteMessage" ->
         Vassal.Actions.DeleteMessage.from_params(params, queue_name)
+      "ChangeMessageVisibility" ->
+        Vassal.Actions.ChangeMessageVisibility.from_params(params, queue_name)
       _ -> raise Vassal.Errors.SQSError, "AWS.SimpleQueueService.InvalidAction"
     end
   end

@@ -98,7 +98,7 @@ defmodule VassalTest do
 
     assert message[:body] == 'abcd'
     assert message[:message_id] == send_resp[:message_id]
-    :timer.sleep(1500)
+    :timer.sleep(1000)
 
     [messages: [message]] = :erlcloud_sqs.receive_message(
       q_name, [], 2, 1, config
@@ -119,9 +119,36 @@ defmodule VassalTest do
     assert message[:body] == 'abcd'
     assert message[:message_id] == send_resp[:message_id]
     :erlcloud_sqs.delete_message(q_name, message[:receipt_handle], config)
-    :timer.sleep(1500)
+    :timer.sleep(1000)
 
     [messages: []] = :erlcloud_sqs.receive_message(q_name, [], 2, 1, config)
+  end
+
+  test "changing message visibility" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    send_resp = :erlcloud_sqs.send_message(q_name, 'abcd', config)
+
+    [messages: [message]] = :erlcloud_sqs.receive_message(
+      q_name, [], 2, 1, config
+    )
+
+    assert message[:body] == 'abcd'
+    assert message[:message_id] == send_resp[:message_id]
+    :erlcloud_sqs.change_message_visibility(q_name, message[:receipt_handle],
+                                            1, config)
+    :timer.sleep(1000)
+
+    [messages: []] = :erlcloud_sqs.receive_message(
+      q_name, [], 2, 1, config
+    )
+
+    :timer.sleep(1100)
+    [messages: [message]] = :erlcloud_sqs.receive_message(
+      q_name, [], 2, 1, config
+    )
+    assert message[:body] == 'abcd'
+    assert message[:message_id] == send_resp[:message_id]
   end
 
   defp config do

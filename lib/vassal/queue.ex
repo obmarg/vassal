@@ -13,6 +13,7 @@ defmodule Vassal.Queue do
   alias Vassal.Actions.SendMessage
   alias Vassal.Actions.ReceiveMessage
   alias Vassal.Actions.DeleteMessage
+  alias Vassal.Actions.ChangeMessageVisibility
   alias Vassal.Errors.SQSError
   alias Vassal.Message
 
@@ -126,6 +127,14 @@ defmodule Vassal.Queue do
                                  delete_message.receipt_handle)
 
     {:reply, %DeleteMessage.Result{}, state}
+  end
+
+  def handle_call(%ChangeMessageVisibility{} = action, _from, state) do
+    state.receipt_handles
+    |> ReceiptHandles.get_pid_from_handle(action.receipt_handle)
+    |> Message.change_visibility_timeout(action.visibility_timeout_ms)
+
+    {:reply, %ChangeMessageVisibility.Result{}, state}
   end
 
   def handle_call(:get_receiving_pids, _from, state) do

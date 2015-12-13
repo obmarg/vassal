@@ -54,6 +54,22 @@ defmodule VassalMessageTest do
     assert_in_queue(context, 1)
   end
 
+  test "changing visibility timeout should change re-insert time", context do
+    message = %Message.MessageInfo{default_visibility_timeout_ms: 100}
+    {:ok, pid} = Message.start_link(context.queue, message)
+
+    :timer.sleep(10)
+    [_] = QueueMessages.dequeue(context.queue, 1)
+    ^message = Message.receive_message(pid, nil)
+    Message.change_visibility_timeout(pid, 100)
+
+    :timer.sleep(180)
+    assert_in_queue(context, 0)
+
+    :timer.sleep(30)
+    assert_in_queue(context, 1)
+  end
+
   test "should shutdown on delete when not in queue", context do
     message = %Message.MessageInfo{default_visibility_timeout_ms: 10}
     {:ok, pid} = GenServer.start(Message, [context.queue, message])
