@@ -79,13 +79,18 @@ defmodule Vassal.Actions do
     Regex.match?(~r/[\w-]{1,80}/, queue_name)
   end
 
-  @valid_attrs Enum.into HashSet.new, [:policy,
-                                       :visibility_timeout,
-                                       :maximum_message_size,
-                                       :message_retention_period,
-                                       :delay_seconds,
-                                       :receive_message_wait_time_seconds,
-                                       :redrive_policy]
+  @valid_attrs Enum.into [:all,
+                          :policy,
+                          :visibility_timeout,
+                          :maximum_message_size,
+                          :message_retention_period,
+                          :delay_seconds,
+                          :receive_message_wait_time_seconds,
+                          :redrive_policy,
+                          :approximate_first_receive_timestamp,
+                          :approximate_receive_count,
+                          :sender_id,
+                          :sent_timestamp], HashSet.new
 
   @doc """
   Validates a set of attributes.
@@ -98,7 +103,26 @@ defmodule Vassal.Actions do
   end
 
   def valid_attributes?(attrs) when is_list(attrs) do
-    Enum.all?(attrs, &(Set.member?(@valid_attrs, &1)))
+    Enum.all?(attrs, &valid_attribute?/1)
+  end
+
+  def valid_attribute?(attr) when is_atom(attr) do
+    Set.member?(@valid_attrs, attr)
+  end
+
+  def valid_attribute?(attr) when is_binary(attr) do
+    try do
+      attr
+      |> Mix.Utils.underscore
+      |> String.to_existing_atom
+      |> valid_attribute?
+    rescue
+      ArgumentError -> false
+    end
+  end
+
+  defp attr_name_to_atom(attr_name) do
+    attr_name |> Mix.Utils.underscore |> String.to_existing_atom
   end
 
   defprotocol Response do

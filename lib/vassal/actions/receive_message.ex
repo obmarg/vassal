@@ -35,8 +35,14 @@ defmodule Vassal.Actions.ReceiveMessage do
                 max_messages: max_msgs,
                 visibility_timeout_ms: vis_ms,
                 wait_time_ms: wait_secs * 1000,
-                attributes: [],
+                attributes: parse_attributes_list(params),
                 message_attributes: []}
+  end
+
+  defp parse_attributes_list(params) do
+    params
+    |> Enum.filter(fn ({p, _}) -> String.starts_with?(p, "AttributeName") end)
+    |> Enum.map(fn ({_, value}) -> value end)
   end
 
   defimpl Vassal.Actions.ActionValidator, for: __MODULE__ do

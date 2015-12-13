@@ -10,7 +10,7 @@
         <%= for {attr_name, attr_val} <- message.attributes do %>
         <Attribute> 
           <Name><%= attr_name %></Name>
-          <Value><%= attr_name %></Value>
+          <Value><%= attr_val %></Value>
         </Attribute> 
         <% end %>
       </Message>

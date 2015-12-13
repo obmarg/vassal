@@ -161,6 +161,22 @@ defmodule VassalTest do
     end
   end
 
+  test "receiving with attributes" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    send_resp = :erlcloud_sqs.send_message(q_name, 'abcd', config)
+    [messages: [message]] = :erlcloud_sqs.receive_message(
+      q_name, [:all], 2, config
+    )
+
+    assert message[:message_id] == send_resp[:message_id]
+    assert message[:body] == 'abcd'
+
+    assert message[:attributes][:approximate_receive_count] == 1
+    assert message[:attributes][:sent_timestamp]
+    assert message[:attributes][:approximate_first_receive_timestamp]
+  end
+
   defp config do
     aws_config(sqs_host: 'localhost',
                sqs_protocol: 'http',

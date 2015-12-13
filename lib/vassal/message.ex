@@ -18,7 +18,11 @@ defmodule Vassal.Message do
                default_visibility_timeout_ms: 30 * 1000,
                message_id: nil,
                body_md5: nil,
-               body: nil]
+               body: nil,
+               attributes: %{sent_timestamp: 0,
+                             approx_first_receive: nil,
+                             approx_receive_count: 0}]
+
   end
 
   defmodule StateMachine do
@@ -112,12 +116,27 @@ defmodule Vassal.Message do
 
   def init([queue_messages_pid, message_info]) do
     sm = StateMachine.new |> StateMachine.start
+
+    message_info = update_in(
+      message_info.attributes.sent_timestamp,
+      fn (_) -> now end
+    )
+
     {:ok, %{state_machine: sm,
             message: message_info,
             queue_messages_pid: queue_messages_pid}}
   end
 
   def handle_call({:receive_message, vis_timeout_ms}, _from, state) do
+    state = update_in state.message.attributes, fn(attrs) ->
+      first_recv = attrs.approx_first_receive
+      if first_recv == nil do
+        first_recv = now
+      end
+      %{attrs | approx_first_receive: first_recv,
+                approx_receive_count: attrs.approx_receive_count + 1}
+    end
+
     reply = state.message
     if state.state_machine.state == :awaiting_delete do
       reply = nil
@@ -185,5 +204,9 @@ defmodule Vassal.Message do
   def handle_info(msg, state) do
     Logger.warning("Message received unknown message: #{inspect msg}")
     {:noreply, state}
+  end
+
+  defp now do
+    :os.system_time(:seconds)
   end
 end

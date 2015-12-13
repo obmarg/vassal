@@ -86,7 +86,7 @@ defmodule Vassal.Queue.Receiver do
 
   def handle_cast(%ReceiveRequest{} = request, state) do
     {:noreply, Dict.update!(state,
-                            :receive_requests,
+                            :waiting_requests,
                             &(List.insert_at &1, -1, request))}
   end
 

@@ -53,12 +53,10 @@ defmodule Vassal.Queue do
         |> lookup_queue!
         |> GenServer.call(:get_receiving_pids)
 
-    vis_timeout = action.visibility_timeout_ms
-
     messages =
       receiver
         |> Receiver.receive_messages(action)
-        |> Enum.map(&(recv_message_from_pid &1, receipt_handles, vis_timeout))
+        |> Enum.map(&(recv_message_from_pid &1, receipt_handles, action))
         |> Enum.filter(fn (x) -> x end)
 
     %ReceiveMessage.Result{messages: messages}
@@ -110,6 +108,7 @@ defmodule Vassal.Queue do
 
   def handle_call(%SendMessage{} = send_message, _from, state) do
     message_id = UUID.uuid4
+
     {:ok, _} = Supervisor.start_child(
       state.message_supervisor,
       [%Vassal.Message.MessageInfo{delay_ms: send_message.delay_ms,
@@ -158,16 +157,30 @@ defmodule Vassal.Queue do
     pid
   end
 
-  defp recv_message_from_pid(message_pid, receipt_handles_pid, vis_timeout) do
-    message_info = Message.receive_message(message_pid, vis_timeout)
+  @attr_conversions %{sent_timestamp: "SentTimestamp",
+                      approx_receive_count: "ApproximateReceiveCount",
+                      approx_first_receive: "ApproximateFirstReceiveTimestamp"}
+
+  defp recv_message_from_pid(message_pid, receipt_handles_pid, action) do
+    message_info = Message.receive_message(message_pid,
+                                           action.visibility_timeout_ms)
     if message_info != nil do
+      attributes = Enum.map message_info.attributes, fn ({k, v}) ->
+        {@attr_conversions[k], v}
+      end
+      attributes = Enum.into %{}, attributes
+
+      unless "All" in action.attributes do
+        attributes = Dict.take(attributes, action.attributes)
+      end
+
       %ReceiveMessage.Message{
         message_id: message_info.message_id,
         receipt_handle: ReceiptHandles.create_receipt(receipt_handles_pid,
                                                       message_pid),
         body_md5: message_info.body_md5,
         body: message_info.body,
-        attributes: %{}
+        attributes: attributes
       }
     else
       nil
