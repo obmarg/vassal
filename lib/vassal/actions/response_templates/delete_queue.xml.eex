@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<DeleteQueueResponse>
+    <%= Vassal.Actions.response_metadata %>
+</DeleteQueueResponse>

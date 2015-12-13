@@ -151,6 +151,16 @@ defmodule VassalTest do
     assert message[:message_id] == send_resp[:message_id]
   end
 
+  test "deleting a queue" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    :erlcloud_sqs.delete_queue(q_name, config)
+
+    assert_raise ErlangError, fn ->
+      :erlcloud_sqs.send_message(q_name, 'abcd', config)
+    end
+  end
+
   defp config do
     aws_config(sqs_host: 'localhost',
                sqs_protocol: 'http',
