@@ -14,7 +14,7 @@ defmodule Vassal.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :cowboy, :plug],
+    [applications: [:logger, :cowboy, :plug, :gproc],
      mod: {Vassal, []}]
   end
 
@@ -32,6 +32,7 @@ defmodule Vassal.Mixfile do
      {:plug, "~> 1.0"},
      {:uuid, "~> 1.1"},
      {:fsm, "~> 0.2.0"},
+     {:gproc, "~> 0.5.0"},
 
      {:erlcloud, "~> 0.12.0", only: [:test]},
      {:httpoison, "~> 0.8.0", only: [:test]},

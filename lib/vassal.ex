@@ -13,8 +13,7 @@ defmodule Vassal do
     children = [
       supervisor(
         Supervisor,
-        [[worker(Vassal.QueueProcessStore, []),
-          worker(Vassal.QueueManager, [Vassal.QueueProcessStore])],
+        [[worker(Vassal.QueueManager, [])],
          [strategy: :rest_for_one]]
       ),
       Plug.Adapters.Cowboy.child_spec(

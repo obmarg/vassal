@@ -7,7 +7,6 @@ defmodule Vassal.Queue do
   """
   use GenServer
 
-  alias Vassal.QueueProcessStore
   alias Vassal.Queue.QueueMessages
   alias Vassal.Queue.Receiver
   alias Vassal.Queue.ReceiptHandles
@@ -18,14 +17,38 @@ defmodule Vassal.Queue do
   alias Vassal.Message
 
   @doc """
+  Finds the PID of a queue process from it's name.
+
+  Returns nil if the queue does not exist.
+  """
+  def lookup_queue(queue_name) do
+    try do
+      :gproc.lookup_pid({:n, :l, "queue.#{queue_name}"})
+    rescue
+      e in ArgumentError -> nil
+    end
+  end
+
+  @doc """
+  Like `lookup_queue/1` but raises an SQSError if the queue is missing.
+  """
+  def lookup_queue!(queue_name) do
+    pid = lookup_queue(queue_name)
+    if pid == nil do
+      raise %SQSError{code: "AWS.SimpleQueueService.NonExistentQueue"}
+    end
+    pid
+  end
+
+  @doc """
   Routes a queue action to the appropriate process, which will carry it out.
   """
-  def do_action(action, queue_process_store \\ Vassal.QueueProcessStore)
+  def do_action(action)
 
-  def do_action(%ReceiveMessage{} = action, queue_process_store) do
+  def do_action(%ReceiveMessage{} = action) do
     {receiver, receipt_handles} =
       action.queue_name
-        |> lookup_queue_worker(queue_process_store)
+        |> lookup_queue!
         |> GenServer.call(:get_receiving_pids)
 
     vis_timeout = action.visibility_timeout_ms
@@ -39,10 +62,8 @@ defmodule Vassal.Queue do
     %ReceiveMessage.Result{messages: messages}
   end
 
-  def do_action(action, queue_process_store) do
-    action.queue_name
-    |> lookup_queue_worker(queue_process_store)
-    |> GenServer.call(action)
+  def do_action(action) do
+    action.queue_name |> lookup_queue! |> GenServer.call(action)
   end
 
   @doc """
@@ -50,12 +71,11 @@ defmodule Vassal.Queue do
 
   ### Params
 
-  - `queue_store` - A QueueProcessStore to register with.
   - `queue_name` - The name of the queue this worker represents
   - `attrs` - The Queue attributes
   """
-  def start_link(queue_store, queue_name, attrs) do
-    GenServer.start_link(__MODULE__, [queue_store, queue_name, attrs])
+  def start_link(queue_name, attrs) do
+    GenServer.start_link(__MODULE__, [queue_name, attrs])
   end
 
   @doc """
@@ -63,12 +83,11 @@ defmodule Vassal.Queue do
 
   ### Params
 
-  - `queue_store` - A QueueProcessStore to register with.
   - `queue_name` - The name of the queue this worker represents
   - `attrs` - The Queue attributes
   """
-  def init([queue_store, queue_name, attrs]) do
-    :ok = QueueProcessStore.add(queue_store, queue_name, self)
+  def init([queue_name, attrs]) do
+    :gproc.reg({:n, :l, "queue.#{queue_name}"}, :ignored)
 
     {:ok, queue_messages_pid} = QueueMessages.start_link()
 
@@ -121,14 +140,6 @@ defmodule Vassal.Queue do
                        restart: :transient)]
     {:ok, pid} = Supervisor.start_link(children, strategy: :simple_one_for_one)
 
-    pid
-  end
-
-  defp lookup_queue_worker(queue_name, queue_process_store) do
-    pid = Vassal.QueueProcessStore.lookup(queue_process_store, queue_name)
-    if pid == nil do
-      raise %SQSError{code: "AWS.SimpleQueueService.NonExistentQueue"}
-    end
     pid
   end
 
