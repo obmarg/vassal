@@ -21,6 +21,8 @@ defmodule Vassal.Message do
                message_id: nil,
                body_md5: nil,
                body: nil,
+               max_retries: nil,
+               dead_letter_queue: nil,
                attributes: %{sent_timestamp: 0,
                              approx_first_receive: nil,
                              approx_receive_count: 0}]

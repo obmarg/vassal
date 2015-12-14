@@ -24,13 +24,27 @@ defmodule Vassal.Queue do
   alias Vassal.Errors.SQSError
   alias Vassal.Message
 
+  defmodule Config do
+    @moduledoc """
+    A struct that defines the configuration for a queue.
+    """
+
+    defstruct [delay_ms: 0,
+               max_message_bytes: 256 * 1024,
+               retention_secs: 60 * 60 * 24 * 4,
+               recv_wait_time_ms: 0,
+               visibility_timeout_ms: 30 * 1000,
+               max_retries: nil,
+               dead_letter_queue: nil]
+  end
+
   @doc """
   Runs a queue action.
   """
   def run_action(action)
 
   def run_action(%CreateQueue{queue_name: queue_name}) do
-    true = QueueStore.add_queue(queue_name, {})
+    true = QueueStore.add_queue(queue_name, %Config{})
 
     {:ok, _pid} = Supervisor.start_child(Vassal.QueueSupervisor, [queue_name])
     %CreateQueue.Result{queue_url: queue_url(queue_name)}
@@ -47,6 +61,15 @@ defmodule Vassal.Queue do
   def run_action(%ReceiveMessage{} = action) do
     receipt_handles = action.queue_name |> ReceiptHandles.for_queue
 
+    unless action.wait_time_ms && action.visibility_timeout_ms do
+      config = QueueStore.queue_config(action.queue_name)
+      vis_timeout = action.visibility_timeout_ms || config.visibility_timeout_ms
+      wait_time = action.wait_time_ms || config.recv_wait_time_ms
+
+      action = %{action | wait_time_ms: wait_time,
+                          visibility_timeout_ms: vis_timeout}
+    end
+
     messages =
       action.queue_name
         |> Receiver.for_queue
@@ -60,11 +83,16 @@ defmodule Vassal.Queue do
   def run_action(%SendMessage{} = send_message) do
     message_id = UUID.uuid4
 
+    config = QueueStore.queue_config(send_message.queue_name)
+    delay_ms = send_message.delay_ms || config.delay_ms
+
     {:ok, _} = Supervisor.start_child(
       Vassal.Queue.MessageSupervisor.for_queue(send_message.queue_name),
-      [%Vassal.Message.MessageInfo{delay_ms: send_message.delay_ms,
+      [%Vassal.Message.MessageInfo{delay_ms: delay_ms,
                                    message_id: message_id,
-                                   body: send_message.message_body}]
+                                   body: send_message.message_body,
+                                   max_retries: config.max_retries,
+                                   dead_letter_queue: config.dead_letter_queue}]
     )
 
     %SendMessage.Result{message_id: message_id, body_md5: "todo"}
@@ -93,6 +121,8 @@ defmodule Vassal.Queue do
   end
 
   def run_action(%DeleteQueue{} = action) do
+    QueueStore.remove_queue(action.queue_name)
+
     queue_sup = Vassal.Queue.Supervisor.for_queue(action.queue_name)
     :ok = Supervisor.terminate_child(Vassal.QueueSupervisor, queue_sup)
 

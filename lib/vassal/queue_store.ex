@@ -49,7 +49,7 @@ defmodule Vassal.QueueStore do
   @doc """
   Gets a queues configuration
   """
-  def get_queue_config(queue_name, config) do
+  def queue_config(queue_name) do
     case :ets.lookup(@ets_table, queue_name) do
       [{^queue_name, config}] -> config
       [] -> nil
@@ -57,7 +57,7 @@ defmodule Vassal.QueueStore do
   end
 
   @doc """
-  Sets a queues configuration
+  Sets a queues configuration.
   """
   defcall queue_config(queue_name, config) do
     reply(:ets.insert(@ets_table, {queue_name, config}))
