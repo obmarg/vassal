@@ -33,6 +33,7 @@ defmodule Vassal.Mixfile do
      {:uuid, "~> 1.1"},
      {:fsm, "~> 0.2.0"},
      {:gproc, "~> 0.5.0"},
+     {:exactor, "~> 2.2.0"},
 
      {:erlcloud, "~> 0.12.0", only: [:test]},
      {:httpoison, "~> 0.8.0", only: [:test]},

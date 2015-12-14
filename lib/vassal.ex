@@ -11,6 +11,7 @@ defmodule Vassal do
     import Supervisor.Spec, warn: false
 
     children = [
+      worker(Vassal.QueueStore, []),
       supervisor(
         Supervisor,
         [[supervisor(Vassal.Queue.Supervisor, [], restart: :transient)],

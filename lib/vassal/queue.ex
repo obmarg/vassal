@@ -7,6 +7,8 @@ defmodule Vassal.Queue do
   """
   use GenServer
 
+  alias Vassal.QueueStore
+
   alias Vassal.Queue.QueueMessages
   alias Vassal.Queue.Receiver
   alias Vassal.Queue.ReceiptHandles
@@ -28,19 +30,18 @@ defmodule Vassal.Queue do
   def run_action(action)
 
   def run_action(%CreateQueue{queue_name: queue_name}) do
+    true = QueueStore.add_queue(queue_name, {})
+
     {:ok, _pid} = Supervisor.start_child(Vassal.QueueSupervisor, [queue_name])
     %CreateQueue.Result{queue_url: queue_url(queue_name)}
   end
 
   def run_action(%GetQueueUrl{queue_name: queue_name}) do
-    try do
-      Vassal.Queue.Supervisor.for_queue(queue_name)
-    rescue
-      e in ErlangError ->
-        raise SQSError, "AWS.SimpleQueueService.NonExistentQueue"
+    if QueueStore.queue_exists?(queue_name) do
+      %GetQueueUrl.Result{queue_url: queue_url(queue_name)}
+    else
+      raise SQSError, "AWS.SimpleQueueService.NonExistentQueue"
     end
-
-    %GetQueueUrl.Result{queue_url: queue_url(queue_name)}
   end
 
   def run_action(%ReceiveMessage{} = action) do
