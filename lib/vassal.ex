@@ -11,10 +11,11 @@ defmodule Vassal do
     import Supervisor.Spec, warn: false
 
     children = [
+      worker(Vassal.QueueManager, []),
       supervisor(
         Supervisor,
-        [[worker(Vassal.QueueManager, [])],
-         [strategy: :rest_for_one]]
+        [[supervisor(Vassal.Queue.Supervisor, [], restart: :transient)],
+         [strategy: :simple_one_for_one, name: Vassal.QueueSupervisor]]
       ),
       Plug.Adapters.Cowboy.child_spec(
         :http, Vassal.WebRouter, [],

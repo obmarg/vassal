@@ -18,15 +18,21 @@ defmodule Vassal.QueueManager do
   @doc """
   Gets the QueueManager to handle the provided action
   """
-  def do_action(%GetQueueUrl{queue_name: queue_name}) do
-    Vassal.Queue.lookup_queue!(queue_name)
+  def run_action(%GetQueueUrl{queue_name: queue_name}) do
+    try do
+      Vassal.Queue.Supervisor.for_queue(queue_name)
+    rescue
+      e in ErlangError ->
+        raise SQSError, "AWS.SimpleQueueService.NonExistentQueue"
+    end
+
     %GetQueueUrl.Result{queue_url: queue_url(queue_name)}
   end
 
   @doc """
   Gets the QueueManager to handle the provided action
   """
-  def do_action(action) do
+  def run_action(action) do
     case GenServer.call(__MODULE__, action) do
       %SQSError{} = error -> raise error
       result -> result
@@ -40,7 +46,7 @@ defmodule Vassal.QueueManager do
   supervisor and then initialise a worker for each of the defined queues.
   """
   def init(_) do
-    {:ok, %{supervisor: start_queue_supervisor}}
+    {:ok, {}}
   end
 
   @doc """
@@ -48,22 +54,12 @@ defmodule Vassal.QueueManager do
   """
   def handle_call(%CreateQueue{queue_name: queue_name, attributes: attrs},
                   _from, state) do
-    start_child(queue_name, attrs, state.supervisor)
+    start_child(queue_name, attrs)
     {:reply, %CreateQueue.Result{queue_url: queue_url(queue_name)}, state}
   end
 
-  defp start_queue_supervisor do
-    import Supervisor.Spec
-    alias Vassal.Queue
-
-    children = [worker(Queue, [], restart: :transient)]
-
-    {:ok, sup} = Supervisor.start_link(children, strategy: :simple_one_for_one)
-    sup
-  end
-
-  defp start_child(queue_name, attrs, supervisor) do
-    {:ok, _pid} = Supervisor.start_child(supervisor, [queue_name, attrs])
+  defp start_child(queue_name, attrs) do
+    {:ok, _pid} = Supervisor.start_child(Vassal.QueueSupervisor, [queue_name])
   end
 
   defp queue_url(queue_name) do

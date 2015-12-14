@@ -7,8 +7,9 @@ defmodule VassalQueueReceiverTest do
   alias Vassal.Actions.ReceiveMessage
 
   setup do
-    {:ok, q_pid} = QueueMessages.start_link()
-    {:ok, receiver} = Receiver.start_link(q_pid)
+    q_name = UUID.uuid1
+    {:ok, q_pid} = QueueMessages.start_link(q_name)
+    {:ok, receiver} = Receiver.start_link(q_name)
 
     {:ok, %{queue: q_pid, receiver: receiver}}
   end

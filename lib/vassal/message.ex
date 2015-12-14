@@ -9,6 +9,8 @@ defmodule Vassal.Message do
   """
   use GenServer
 
+  alias Vassal.Queue.QueueMessages
+
   defmodule MessageInfo do
     @moduledoc """
     A struct that contains all the information about a message.
@@ -85,8 +87,8 @@ defmodule Vassal.Message do
   @doc """
   Starts a message process
   """
-  def start_link(queue_messages_pid, message_info) do
-    GenServer.start_link(__MODULE__, [queue_messages_pid, message_info])
+  def start_link(queue_name, message_info) do
+    GenServer.start_link(__MODULE__, [queue_name, message_info])
   end
 
   @doc """
@@ -114,7 +116,7 @@ defmodule Vassal.Message do
     GenServer.call(message_pid, {:change_visibility_timeout, timeout_ms})
   end
 
-  def init([queue_messages_pid, message_info]) do
+  def init([queue_name, message_info]) do
     sm = StateMachine.new |> StateMachine.start
 
     message_info = update_in(
@@ -124,7 +126,7 @@ defmodule Vassal.Message do
 
     {:ok, %{state_machine: sm,
             message: message_info,
-            queue_messages_pid: queue_messages_pid}}
+            queue_messages_pid: QueueMessages.for_queue(queue_name)}}
   end
 
   def handle_call({:receive_message, vis_timeout_ms}, _from, state) do
@@ -180,7 +182,7 @@ defmodule Vassal.Message do
   end
 
   def handle_info(:add_to_queue, state) do
-    Vassal.Queue.QueueMessages.enqueue(state.queue_messages_pid, self)
+    QueueMessages.enqueue(state.queue_messages_pid, self)
     {:noreply, state}
   end
 

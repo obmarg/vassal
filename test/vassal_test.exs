@@ -156,6 +156,7 @@ defmodule VassalTest do
     :erlcloud_sqs.create_queue(q_name, config)
     :erlcloud_sqs.delete_queue(q_name, config)
 
+    :timer.sleep(100)
     assert_raise ErlangError, fn ->
       :erlcloud_sqs.send_message(q_name, 'abcd', config)
     end

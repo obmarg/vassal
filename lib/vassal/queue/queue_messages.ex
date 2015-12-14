@@ -12,8 +12,19 @@ defmodule Vassal.Queue.QueueMessages do
   are not hidden by a delay/visibility timeout.
   """
 
-  def start_link do
-    Agent.start_link(fn -> [] end)
+  def start_link(queue_name) do
+    Agent.start_link fn ->
+      queue_name |> to_gproc_name |> :gproc.reg
+      []
+    end
+  end
+
+  @doc """
+  Returns the PID of a QueueMessages process when given the queue name.
+  """
+  def for_queue(queue_name, timeout \\ 50) do
+    {pid, _} = queue_name |> to_gproc_name |> :gproc.await(timeout)
+    pid
   end
 
   @doc """
@@ -42,4 +53,7 @@ defmodule Vassal.Queue.QueueMessages do
     Agent.get_and_update(queue_messages_pid, &(Enum.split(&1, max_to_receive)))
   end
 
+  defp to_gproc_name(queue_name) do
+    {:n, :l, "queue.#{queue_name}.queue_messages"}
+  end
 end

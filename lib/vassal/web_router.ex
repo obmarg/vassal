@@ -59,7 +59,7 @@ defmodule Vassal.WebRouter do
       |> log_action
       |> Actions.params_to_action
       |> Actions.valid!
-      |> Vassal.QueueManager.do_action
+      |> Vassal.QueueManager.run_action
       |> Actions.Response.from_result
     end
   end
@@ -69,7 +69,7 @@ defmodule Vassal.WebRouter do
     |> log_action
     |> Actions.params_to_action(queue_name)
     |> Actions.valid!
-    |> Queue.do_action
+    |> Queue.run_action
     |> Actions.Response.from_result
   end
 

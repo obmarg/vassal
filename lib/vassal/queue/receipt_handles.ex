@@ -3,10 +3,20 @@ defmodule Vassal.Queue.ReceiptHandles do
   This module provides an agent for managing a queues receipt handles.
   """
 
-  def start_link do
+  def start_link(queue_name) do
     Agent.start_link fn ->
+      queue_name |> to_gproc_name |> :gproc.reg
+
       %{receipts_to_pid: %{}, pid_to_receipts: %{}}
     end
+  end
+
+  @doc """
+  Returns the PID of a ReceiptHandles process when given the queue name.
+  """
+  def for_queue(queue_name, timeout \\ 50) do
+    {pid, _} = queue_name |> to_gproc_name |> :gproc.await(timeout)
+    pid
   end
 
   @doc """
@@ -46,5 +56,9 @@ defmodule Vassal.Queue.ReceiptHandles do
       %{state | pid_to_receipts: Dict.drop(state.pid_to_receipts, [pid]),
                 receipts_to_pid: Dict.drop(state.receipts_to_pid, receipts)}
     end
+  end
+
+  defp to_gproc_name(queue_name) do
+    {:n, :l, "queue.#{queue_name}.receipt_handles"}
   end
 end

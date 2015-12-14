@@ -6,11 +6,10 @@ defmodule VassalMessageTest do
   alias Vassal.Message.MessageInfo
 
   setup do
-    {:ok, q_pid} = QueueMessages.start_link()
+    queue_name = UUID.uuid1
+    {:ok, q_pid} = QueueMessages.start_link(queue_name)
 
-    # Really wish I had py.test style fixtures in elixir...
-
-    {:ok, %{queue: q_pid}}
+    {:ok, %{queue: queue_name, queue_pid: q_pid}}
   end
 
   test "should add to queue immediately when no delay", context do
@@ -45,7 +44,7 @@ defmodule VassalMessageTest do
     {:ok, pid} = Message.start_link(context.queue, message)
 
     :timer.sleep(10)
-    [_] = QueueMessages.dequeue(context.queue, 1)
+    [_] = QueueMessages.dequeue(context.queue_pid, 1)
     %MessageInfo{} = Message.receive_message(pid, nil)
     :timer.sleep(80)
 
@@ -60,7 +59,7 @@ defmodule VassalMessageTest do
     {:ok, pid} = Message.start_link(context.queue, message)
 
     :timer.sleep(10)
-    [_] = QueueMessages.dequeue(context.queue, 1)
+    [_] = QueueMessages.dequeue(context.queue_pid, 1)
     %MessageInfo{} = Message.receive_message(pid, nil)
     Message.change_visibility_timeout(pid, 100)
 
@@ -127,7 +126,7 @@ defmodule VassalMessageTest do
   end
 
   defp assert_in_queue(context, num) do
-    queue_contents = Agent.get(context.queue, fn (x) -> x end)
+    queue_contents = Agent.get(context.queue_pid, fn (x) -> x end)
     assert length(queue_contents) == num
   end
 end

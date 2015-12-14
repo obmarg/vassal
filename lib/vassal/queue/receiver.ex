@@ -53,13 +53,23 @@ defmodule Vassal.Queue.Receiver do
     end
   end
 
-  def start_link(queue_messages_pid) do
-    GenServer.start_link(__MODULE__, queue_messages_pid)
+  @doc """
+  Returns the PID of a Receiver process when given the queue name.
+  """
+  def for_queue(queue_name, timeout \\ 50) do
+    {pid, _} = queue_name |> to_gproc_name |> :gproc.await(timeout)
+    pid
   end
 
-  def init(queue_messages_pid) do
+  def start_link(queue_name) do
+    GenServer.start_link(__MODULE__, queue_name)
+  end
+
+  def init(queue_name) do
+    queue_name |> to_gproc_name |> :gproc.reg
+
     :timer.send_interval(@poll_interval, :poll)
-    {:ok, %{queue_messages_pid: queue_messages_pid,
+    {:ok, %{queue_messages_pid: QueueMessages.for_queue(queue_name),
             waiting_requests: [],
             completed_requests: HashDict.new}}
   end
@@ -132,5 +142,9 @@ defmodule Vassal.Queue.Receiver do
     Dict.update!(state,
                  :completed_requests,
                  &(Dict.put &1, request.id, {messages, timer_ref}))
+  end
+
+  defp to_gproc_name(queue_name) do
+    {:n, :l, "queue.#{queue_name}.receiver"}
   end
 end
