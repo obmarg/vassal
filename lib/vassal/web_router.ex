@@ -27,44 +27,38 @@ defmodule Vassal.WebRouter do
   get "/" do
     conn
     |> put_resp_header("content-type", "application/xml")
-    |> send_resp(200, handle_general_request(conn))
+    |> send_resp(200, handle_root_request(conn))
   end
 
   post "/" do
     conn
     |> put_resp_header("content-type", "application/xml")
-    |> send_resp(200, handle_general_request(conn))
+    |> send_resp(200, handle_root_request(conn))
   end
 
   get "/:queue_name" do
     conn
     |> put_resp_header("content-type", "application/xml")
-    |> send_resp(200, handle_queue_request(queue_name, conn))
+    |> send_resp(200, handle_request(queue_name, conn))
   end
 
   post "/:queue_name" do
     conn
     |> put_resp_header("content-type", "application/xml")
-    |> send_resp(200, handle_queue_request(queue_name, conn))
+    |> send_resp(200, handle_request(queue_name, conn))
   end
 
-  defp handle_general_request(%{params: params} = conn) do
+  defp handle_root_request(%{params: params} = conn) do
+    queue_name = nil
     if Dict.has_key?(params, "QueueUrl") do
       # This is actually a queue request, lets forward it on...
       queue_name = params["QueueUrl"] |> String.split("/") |> List.last
-      handle_queue_request(queue_name, conn)
-    else
-      # Route non queue-specific requests.
-      params
-      |> log_action
-      |> Actions.params_to_action
-      |> Actions.valid!
-      |> Vassal.QueueManager.run_action
-      |> Actions.Response.from_result
     end
+
+    handle_request(queue_name, conn)
   end
 
-  defp handle_queue_request(queue_name, %{params: params}) do
+  defp handle_request(queue_name, %{params: params}) do
     params
     |> log_action
     |> Actions.params_to_action(queue_name)

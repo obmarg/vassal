@@ -10,11 +10,15 @@ defmodule Vassal.Queue do
   alias Vassal.Queue.QueueMessages
   alias Vassal.Queue.Receiver
   alias Vassal.Queue.ReceiptHandles
+
+  alias Vassal.Actions.CreateQueue
+  alias Vassal.Actions.GetQueueUrl
   alias Vassal.Actions.SendMessage
   alias Vassal.Actions.ReceiveMessage
   alias Vassal.Actions.DeleteMessage
   alias Vassal.Actions.ChangeMessageVisibility
   alias Vassal.Actions.DeleteQueue
+
   alias Vassal.Errors.SQSError
   alias Vassal.Message
 
@@ -22,6 +26,22 @@ defmodule Vassal.Queue do
   Runs a queue action.
   """
   def run_action(action)
+
+  def run_action(%CreateQueue{queue_name: queue_name}) do
+    {:ok, _pid} = Supervisor.start_child(Vassal.QueueSupervisor, [queue_name])
+    %CreateQueue.Result{queue_url: queue_url(queue_name)}
+  end
+
+  def run_action(%GetQueueUrl{queue_name: queue_name}) do
+    try do
+      Vassal.Queue.Supervisor.for_queue(queue_name)
+    rescue
+      e in ErlangError ->
+        raise SQSError, "AWS.SimpleQueueService.NonExistentQueue"
+    end
+
+    %GetQueueUrl.Result{queue_url: queue_url(queue_name)}
+  end
 
   def run_action(%ReceiveMessage{} = action) do
     receipt_handles = action.queue_name |> ReceiptHandles.for_queue
@@ -106,5 +126,9 @@ defmodule Vassal.Queue do
     else
       nil
     end
+  end
+
+  defp queue_url(queue_name) do
+    "#{Application.get_env(:vassal, :url)}/#{queue_name}"
   end
 end
