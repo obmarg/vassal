@@ -1,9 +1,6 @@
 defmodule Vassal.Queue do
   @moduledoc """
-  The module that manages queues.
-
-  This module itself defines a GenServer that manages all the processes related
-  to a Queue and it's messages.
+  Implements all the actions for a Queue using the various other components.
   """
   use GenServer
 
@@ -23,6 +20,7 @@ defmodule Vassal.Queue do
 
   alias Vassal.Errors.SQSError
   alias Vassal.Message
+  alias Vassal.Utils
 
   defmodule Config do
     @moduledoc """
@@ -36,6 +34,24 @@ defmodule Vassal.Queue do
                visibility_timeout_ms: 30 * 1000,
                max_retries: nil,
                dead_letter_queue: nil]
+
+    def from_create_queue_attrs(attrs) do
+      import Utils, only: [get_param_as_ms: 2, get_param_as_int: 2]
+
+      rv = %{
+        delay_ms: get_param_as_ms(attrs, :delay_seconds),
+        max_message_bytes: get_param_as_int(attrs, :maximum_message_size),
+        retention_secs: get_param_as_int(attrs, :message_retention_period),
+        recv_wait_time_ms: get_param_as_ms(attrs,
+                                           :receive_message_wait_time_seconds),
+        visibility_timeout_ms: get_param_as_ms(attrs, :visibility_timeout)
+      }
+
+      defaults = Map.from_struct(%__MODULE__{})
+      rv = Dict.merge(rv, defaults, fn(_, v1, v2) -> v1 || v2 end)
+      struct(__MODULE__, rv)
+    end
+
   end
 
   @doc """
@@ -43,8 +59,9 @@ defmodule Vassal.Queue do
   """
   def run_action(action)
 
-  def run_action(%CreateQueue{queue_name: queue_name}) do
-    true = QueueStore.add_queue(queue_name, %Config{})
+  def run_action(%CreateQueue{queue_name: queue_name, attributes: attrs}) do
+    true = QueueStore.add_queue(queue_name,
+                                Config.from_create_queue_attrs(attrs))
 
     {:ok, _pid} = Supervisor.start_child(Vassal.QueueSupervisor, [queue_name])
     %CreateQueue.Result{queue_url: queue_url(queue_name)}

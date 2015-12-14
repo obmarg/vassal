@@ -21,8 +21,8 @@ defmodule Vassal.Actions.ReceiveMessage do
   }
 
   def from_params(params, queue_name) do
-    vis_ms = get_param_as_ms(params, "VisibilityTimeout")
-    wait_ms = get_param_as_ms(params, "WaitTimeSeconds")
+    vis_ms = Utils.get_param_as_ms(params, "VisibilityTimeout")
+    wait_ms = Utils.get_param_as_ms(params, "WaitTimeSeconds")
     {max_msgs, ""} = Integer.parse(Dict.get(params, "MaxNumberOfMessages", "1"))
 
     %__MODULE__{queue_name: queue_name,
@@ -31,16 +31,6 @@ defmodule Vassal.Actions.ReceiveMessage do
                 wait_time_ms: wait_ms,
                 attributes: parse_attributes_list(params),
                 message_attributes: []}
-  end
-
-  defp get_param_as_ms(params, param_name) do
-    secs = Dict.get(params, param_name, nil)
-    if secs != nil do
-      {secs, ""} = Integer.parse(secs)
-      secs * 1000
-    else
-      nil
-    end
   end
 
   defp parse_attributes_list(params) do
