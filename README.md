@@ -4,19 +4,36 @@ A Fake SQS server to aid in SQS development.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+Vassal is released in 2 forms - a docker container and a packaged release.
 
-  1. Add vassal to your list of dependencies in `mix.exs`:
+### Running via Docker
 
-        def deps do
-          [{:vassal, "~> 0.0.1"}]
-        end
+Installing & running Vassal via docker is the simplest option:
 
-  2. Ensure vassal is started before your application:
+    docker run -p 4567:4567 -d obmarg/vassal:0.1.1
 
-        def application do
-          [applications: [:vassal]]
-        end
+### Installing & Running from Release
+
+To install a release:
+
+- Download the relevant release from [github
+  releases](https://github.com/obmarg/vassal/releases).
+- Untar it.
+- Run the server in the background with `bin/vassal start`.
+
+For example:
+
+    mkdir vassal
+    cd vassal
+    wget https://github.com/obmarg/vassal/releases/download/v0.1.1/vassal-0.1.1-osx.tar.gz
+    tar -xf vassal-0.1.1-osx.tar.gz
+    bin/vassal start
+
+### Configuration
+
+By default, Vassal assumes that it will be accessed via localhost.  If that is
+not the case, then you should provide the correct url in the `URL` environment
+variable.
 
 ## Implemented Actions
 

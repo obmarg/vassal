@@ -7,3 +7,5 @@ erl_crash.dump
 .edip.log
 rel/
 tarballs/
+
+.vagrant/
