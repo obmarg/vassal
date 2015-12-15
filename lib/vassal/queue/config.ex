@@ -10,7 +10,7 @@ defmodule Vassal.Queue.Config do
              retention_secs: 60 * 60 * 24 * 4,
              recv_wait_time_ms: 0,
              visibility_timeout_ms: 30 * 1000,
-             max_retries: nil,
+             max_receives: nil,
              dead_letter_queue: nil]
 
   def from_incoming_attrs(attrs) do
@@ -35,7 +35,7 @@ defmodule Vassal.Queue.Config do
             |> List.last
       end
       rv = rv
-      |> Dict.put(:max_retries, redrive["maxReceiveCount"])
+      |> Dict.put(:max_receives, redrive["maxReceiveCount"])
       |> Dict.put(:dead_letter_queue, dead_letter_queue)
     end
 
@@ -52,8 +52,8 @@ defmodule Vassal.Queue.Config do
       "ReceiveMessageWaitTimeSeconds" => div(config.recv_wait_time_ms, 1000),
       "VisibilityTimeout" => div(config.visibility_timeout_ms, 1000),
     }
-    if config.max_retries do
-      redrive_policy = %{"maxReceiveCount" => config.max_retries}
+    if config.max_receives do
+      redrive_policy = %{"maxReceiveCount" => config.max_receives}
       if config.dead_letter_queue do
         redrive_policy = Dict.put(redrive_policy,
                                   "deadLetterTargetArn",

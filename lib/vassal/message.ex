@@ -21,7 +21,7 @@ defmodule Vassal.Message do
                message_id: nil,
                body_md5: nil,
                body: nil,
-               max_retries: nil,
+               max_receives: nil,
                dead_letter_queue: nil,
                attributes: %{sent_timestamp: 0,
                              approx_first_receive: nil,
@@ -45,9 +45,9 @@ defmodule Vassal.Message do
     # machine, and transition accordingly when they max out.
 
     defstate new do
-      defevent start() do
+      defevent start(max_receives) do
         send(self, :start_initial_timer)
-        next_state(:initial_wait)
+        next_state(:initial_wait, max_receives)
       end
     end
 
@@ -59,9 +59,9 @@ defmodule Vassal.Message do
     end
 
     defstate queued do
-      defevent send_data(visibility_timeout_ms) do
+      defevent send_data(visibility_timeout_ms), data: remaining_recvs do
         send(self, {:start_visibility_timer, visibility_timeout_ms})
-        next_state(:processing)
+        next_state(:processing, remaining_recvs - 1)
       end
       defevent delete do
         next_state(:awaiting_delete)
@@ -71,18 +71,27 @@ defmodule Vassal.Message do
     defstate processing do
       defevent delete do
         send(self, :finish)
-        next_state(:finish)
+        next_state(:done)
       end
-      defevent timer_expired do
-        send(self, :add_to_queue)
-        next_state(:queued)
+      defevent timer_expired, data: remaining_recvs do
+        if remaining_recvs > 0 do
+          send(self, :add_to_queue)
+          next_state(:queued)
+        else
+          send(self, :max_receives)
+          next_state(:done)
+        end
       end
     end
 
     defstate awaiting_delete do
       defevent send_data(_) do
         send(self, :finish)
+        next_state(:done)
       end
+    end
+
+    defstate done do
     end
   end
 
@@ -119,7 +128,8 @@ defmodule Vassal.Message do
   end
 
   def init([queue_name, message_info]) do
-    sm = StateMachine.new |> StateMachine.start
+    max_receives = message_info.max_receives || 1000
+    sm = StateMachine.new |> StateMachine.start(max_receives)
 
     message_info = update_in(
       message_info.attributes.sent_timestamp,
@@ -195,6 +205,19 @@ defmodule Vassal.Message do
 
     timer_ref = :erlang.start_timer(timer_len, self, :timer_expired)
     {:noreply, Dict.put(state, :timer_ref, timer_ref)}
+  end
+
+  def handle_info(:max_receives, state) do
+    import Vassal.Queue, only: [send_message: 2]
+
+    if state.message.dead_letter_queue do
+      default_attributes = %MessageInfo{}.attributes
+      send_message(state.message.dead_letter_queue,
+                   %MessageInfo{state.message | delay_ms: nil,
+                                                attributes: default_attributes})
+    end
+
+    {:stop, :shutdown, state}
   end
 
   def handle_info(:finish, state) do

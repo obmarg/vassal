@@ -98,20 +98,13 @@ defmodule Vassal.Queue do
     %ReceiveMessage.Result{messages: messages}
   end
 
-  def run_action(%SendMessage{} = send_message) do
+  def run_action(%SendMessage{} = action) do
     message_id = UUID.uuid4
 
-    config = QueueStore.queue_config(send_message.queue_name)
-    delay_ms = send_message.delay_ms || config.delay_ms
-
-    {:ok, _} = Supervisor.start_child(
-      Vassal.Queue.MessageSupervisor.for_queue(send_message.queue_name),
-      [%Vassal.Message.MessageInfo{delay_ms: delay_ms,
-                                   message_id: message_id,
-                                   body: send_message.message_body,
-                                   max_retries: config.max_retries,
-                                   dead_letter_queue: config.dead_letter_queue}]
-    )
+    send_message(action.queue_name,
+                 %Vassal.Message.MessageInfo{delay_ms: action.delay_ms,
+                                             message_id: message_id,
+                                             body: action.message_body})
 
     %SendMessage.Result{message_id: message_id, body_md5: "todo"}
   end
@@ -145,6 +138,26 @@ defmodule Vassal.Queue do
     :ok = Supervisor.terminate_child(Vassal.QueueSupervisor, queue_sup)
 
     %DeleteQueue.Result{}
+  end
+
+  @doc """
+  Sends a message to a queue.
+
+  This function is provided so queues can provide the dead letter functionality.
+  Usually messages will be sent by calling run_action with a SendMessage action.
+  """
+  def send_message(queue_name, message_info) do
+    config = QueueStore.queue_config(queue_name)
+    message_info = %Message.MessageInfo{
+      message_info | delay_ms: message_info.delay_ms || config.delay_ms,
+                     max_receives: config.max_receives,
+                     dead_letter_queue: config.dead_letter_queue
+    }
+
+    {:ok, _} = Supervisor.start_child(
+      Vassal.Queue.MessageSupervisor.for_queue(queue_name),
+      [message_info]
+    )
   end
 
   @attr_conversions %{sent_timestamp: "SentTimestamp",

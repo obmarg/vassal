@@ -202,10 +202,7 @@ defmodule VassalTest do
     q_name = random_queue_name
     :erlcloud_sqs.create_queue(q_name, config)
 
-    redrive_policy = Poison.encode!(
-      %{"deadLetterTargetArn" => Vassal.Utils.make_arn("test_arn"),
-        "maxReceiveCount" => 1}
-    )
+    redrive_policy = build_redrive_policy(1, "test_arn")
     attributes = [visibility_timeout: 40,
                   delay_seconds: 50,
                   redrive_policy: redrive_policy]
@@ -220,6 +217,39 @@ defmodule VassalTest do
     assert str_redrive == attributes[:redrive_policy]
   end
 
+  test "max receives" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    attrs = [visibility_timeout: 1, redrive_policy: build_redrive_policy(1)]
+    :erlcloud_sqs.set_queue_attributes(q_name, attrs, config)
+
+    :erlcloud_sqs.send_message(q_name, 'abcd', config)
+    [messages: [message]] = :erlcloud_sqs.receive_message(q_name, config)
+
+    :timer.sleep(1000)
+    [messages: []] = :erlcloud_sqs.receive_message(q_name, config)
+  end
+
+  test "dead letter queues" do
+    q_name = random_queue_name
+    dlq_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    :erlcloud_sqs.create_queue(dlq_name, config)
+    attrs = [visibility_timeout: 1,
+             redrive_policy: build_redrive_policy(1, dlq_name)]
+    :erlcloud_sqs.set_queue_attributes(q_name, attrs, config)
+
+    :erlcloud_sqs.send_message(q_name, 'abcd', config)
+    [messages: [message]] = :erlcloud_sqs.receive_message(q_name, config)
+
+    :timer.sleep(1000)
+    [messages: [dlq_message]] = :erlcloud_sqs.receive_message(dlq_name, config)
+    assert dlq_message[:body] == message[:body]
+    assert dlq_message[:message_id] == message[:message_id]
+
+    [messages: []] = :erlcloud_sqs.receive_message(q_name, config)
+  end
+
   defp config do
     aws_config(sqs_host: 'localhost',
                sqs_protocol: 'http',
@@ -230,5 +260,14 @@ defmodule VassalTest do
 
   defp random_queue_name do
     UUID.uuid4() |> to_char_list
+  end
+
+  defp build_redrive_policy(max_receives, dead_letter_name \\ nil) do
+    policy = %{"maxReceiveCount" => max_receives}
+    if dead_letter_name do
+      policy = Dict.put(policy, "deadLetterTargetArn",
+                        Vassal.Utils.make_arn(dead_letter_name))
+    end
+    Poison.encode!(policy)
   end
 end
