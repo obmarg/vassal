@@ -3,7 +3,7 @@ defmodule Vassal.Mixfile do
 
   def project do
     [app: :vassal,
-     version: "0.0.1",
+     version: "0.1.0",
      elixir: "~> 1.1",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -14,7 +14,8 @@ defmodule Vassal.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :cowboy, :plug, :gproc],
+    [applications: [:logger, :cowboy, :plug, :gproc, :poison, :uuid, :exactor,
+                    :fsm, :mix],
      mod: {Vassal, []}]
   end
 
@@ -36,10 +37,16 @@ defmodule Vassal.Mixfile do
      {:exactor, "~> 2.2.0"},
      {:poison, "~> 1.5"},
 
+     # For building releases
+     {:exrm, "~> 1.0.0-rc7"},
+     {:edip, "~> 0.4.3", only: [:dev], warn_missing: false},
+
+     # For testing
      {:erlcloud, "~> 0.12.0", only: [:test]},
      {:httpoison, "~> 0.8.0", only: [:test]},
 
-     {:credo, "~> 0.2.0", only: [:dev, :test]},
+     # For linting etc.
+     {:credo, "~> 0.2.0", only: [:dev, :test], warn_missing: false},
    ]
   end
 end
