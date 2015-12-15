@@ -36,7 +36,7 @@ defmodule Vassal.Actions.DeleteMessage do
       EEx.function_from_file(
         :def, :from_result,
         "lib/vassal/actions/response_templates/delete_message.xml.eex",
-        [:result]
+        [:_result]
       )
     end
   end

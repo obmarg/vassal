@@ -22,10 +22,6 @@ defmodule Vassal.Actions.GetQueueAttributes do
     |> Enum.map(fn ({_, value}) -> value end)
   end
 
-  defp attr_name_to_atom(attr_name) do
-    attr_name |> Mix.Utils.underscore |> String.to_existing_atom
-  end
-
   defimpl Vassal.Actions.ActionValidator, for: __MODULE__ do
     def valid?(action) do
       Vassal.Actions.valid_queue_name?(action.queue_name)

@@ -6,7 +6,6 @@ defmodule Vassal.Queue do
 
   alias Vassal.QueueStore
 
-  alias Vassal.Queue.QueueMessages
   alias Vassal.Queue.Receiver
   alias Vassal.Queue.ReceiptHandles
   alias Vassal.Queue.Config

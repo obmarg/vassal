@@ -10,7 +10,7 @@ defmodule Vassal.Actions.DeleteQueue do
     queue_name: String.t
   }
 
-  def from_params(params, queue_name) do
+  def from_params(_params, queue_name) do
     %__MODULE__{queue_name: queue_name}
   end
 
@@ -31,7 +31,7 @@ defmodule Vassal.Actions.DeleteQueue do
       EEx.function_from_file(
         :def, :from_result,
         "lib/vassal/actions/response_templates/delete_queue.xml.eex",
-        [:result]
+        [:_result]
       )
     end
   end

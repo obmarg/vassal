@@ -57,7 +57,7 @@ defmodule Vassal.Actions.SetQueueAttributes do
       EEx.function_from_file(
         :def, :from_result,
         "lib/vassal/actions/response_templates/set_queue_attributes.xml.eex",
-        [:result]
+        [:_result]
       )
     end
   end

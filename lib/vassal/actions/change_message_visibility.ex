@@ -43,7 +43,7 @@ defmodule Vassal.Actions.ChangeMessageVisibility do
         :def, :from_result,
         ("lib/vassal/actions/response_templates" <>
          "/change_message_visibility.xml.eex"),
-        [:result]
+        [:_result]
       )
     end
   end

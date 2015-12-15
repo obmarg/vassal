@@ -65,12 +65,7 @@ defmodule Vassal.Actions do
     @doc """
     Returns true if the actions data is valid.
     """
-    @fallback_to_any
     def valid?(action)
-  end
-
-  defimpl ActionValidator, for: Any do
-    def valid?(action), do: true
   end
 
   @doc """
@@ -120,10 +115,6 @@ defmodule Vassal.Actions do
     rescue
       ArgumentError -> false
     end
-  end
-
-  defp attr_name_to_atom(attr_name) do
-    attr_name |> Mix.Utils.underscore |> String.to_existing_atom
   end
 
   defprotocol Response do
