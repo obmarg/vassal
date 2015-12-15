@@ -1,3 +1,8 @@
+v0.1.2
+----
+
+- Fixed support for SetQueueAttributes via pythons aiobotocore.
+
 v0.1.1
 -----
 
