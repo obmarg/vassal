@@ -32,7 +32,7 @@ defmodule Vassal.Utils do
   Builds a fake ARN from a queue_name
   """
   def make_arn(queue_name) do
-    "arn:aws:sqs:us-east-1:000000000000:#{queue_name}"
+    "arn:aws:sqs:vassal:000000000000:#{queue_name}"
   end
 
 end
