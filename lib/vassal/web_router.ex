@@ -27,24 +27,28 @@ defmodule Vassal.WebRouter do
   get "/" do
     conn
     |> put_resp_header("content-type", "application/xml")
+    |> put_resp_header("connection", "close")
     |> send_resp(200, handle_root_request(conn))
   end
 
   post "/" do
     conn
     |> put_resp_header("content-type", "application/xml")
+    |> put_resp_header("connection", "close")
     |> send_resp(200, handle_root_request(conn))
   end
 
   get "/:queue_name" do
     conn
     |> put_resp_header("content-type", "application/xml")
+    |> put_resp_header("connection", "close")
     |> send_resp(200, handle_request(queue_name, conn))
   end
 
   post "/:queue_name" do
     conn
     |> put_resp_header("content-type", "application/xml")
+    |> put_resp_header("connection", "close")
     |> send_resp(200, handle_request(queue_name, conn))
   end
 
@@ -70,6 +74,7 @@ defmodule Vassal.WebRouter do
   defp handle_errors(conn, %{reason: %SQSError{} = error}) do
     conn
     |> put_resp_header("content-type", "application/xml")
+    |> put_resp_header("connection", "close")
     |> send_resp(400, Actions.Response.from_result(error))
   end
   defp handle_errors(conn, %{reason: unknown, stack: stack}) do
@@ -78,6 +83,7 @@ defmodule Vassal.WebRouter do
     Logger.error(inspect stack)
     conn
     |> put_resp_header("content-type", "application/xml")
+    |> put_resp_header("connection", "close")
     |> send_resp(400, Actions.Response.from_result(
           %SQSError{code: "AWS.SimpleQueueService.Unknown"}
         ))
