@@ -9,6 +9,7 @@ defmodule Vassal.Queue do
   alias Vassal.Queue.QueueMessages
   alias Vassal.Queue.Receiver
   alias Vassal.Queue.ReceiptHandles
+  alias Vassal.Queue.Config
 
   alias Vassal.Actions.CreateQueue
   alias Vassal.Actions.GetQueueUrl
@@ -17,42 +18,13 @@ defmodule Vassal.Queue do
   alias Vassal.Actions.DeleteMessage
   alias Vassal.Actions.ChangeMessageVisibility
   alias Vassal.Actions.DeleteQueue
+  alias Vassal.Actions.SetQueueAttributes
+  alias Vassal.Actions.GetQueueAttributes
 
   alias Vassal.Errors.SQSError
   alias Vassal.Message
   alias Vassal.Utils
 
-  defmodule Config do
-    @moduledoc """
-    A struct that defines the configuration for a queue.
-    """
-
-    defstruct [delay_ms: 0,
-               max_message_bytes: 256 * 1024,
-               retention_secs: 60 * 60 * 24 * 4,
-               recv_wait_time_ms: 0,
-               visibility_timeout_ms: 30 * 1000,
-               max_retries: nil,
-               dead_letter_queue: nil]
-
-    def from_create_queue_attrs(attrs) do
-      import Utils, only: [get_param_as_ms: 2, get_param_as_int: 2]
-
-      rv = %{
-        delay_ms: get_param_as_ms(attrs, :delay_seconds),
-        max_message_bytes: get_param_as_int(attrs, :maximum_message_size),
-        retention_secs: get_param_as_int(attrs, :message_retention_period),
-        recv_wait_time_ms: get_param_as_ms(attrs,
-                                           :receive_message_wait_time_seconds),
-        visibility_timeout_ms: get_param_as_ms(attrs, :visibility_timeout)
-      }
-
-      defaults = Map.from_struct(%__MODULE__{})
-      rv = Dict.merge(rv, defaults, fn(_, v1, v2) -> v1 || v2 end)
-      struct(__MODULE__, rv)
-    end
-
-  end
 
   @doc """
   Runs a queue action.
@@ -61,18 +33,47 @@ defmodule Vassal.Queue do
 
   def run_action(%CreateQueue{queue_name: queue_name, attributes: attrs}) do
     true = QueueStore.add_queue(queue_name,
-                                Config.from_create_queue_attrs(attrs))
+                                Config.from_incoming_attrs(attrs))
 
     {:ok, _pid} = Supervisor.start_child(Vassal.QueueSupervisor, [queue_name])
     %CreateQueue.Result{queue_url: queue_url(queue_name)}
   end
 
   def run_action(%GetQueueUrl{queue_name: queue_name}) do
-    if QueueStore.queue_exists?(queue_name) do
-      %GetQueueUrl.Result{queue_url: queue_url(queue_name)}
-    else
+    unless QueueStore.queue_exists?(queue_name) do
       raise SQSError, "AWS.SimpleQueueService.NonExistentQueue"
     end
+    %GetQueueUrl.Result{queue_url: queue_url(queue_name)}
+  end
+
+  def run_action(%SetQueueAttributes{queue_name: queue_name,
+                                     attributes: attrs}) do
+    unless QueueStore.queue_exists?(queue_name) do
+      raise SQSError, "AWS.SimpleQueueService.NonExistentQueue"
+    end
+
+    QueueStore.queue_config(queue_name, Config.from_incoming_attrs(attrs))
+
+    %SetQueueAttributes.Result{}
+  end
+
+  def run_action(%GetQueueAttributes{queue_name: queue_name,
+                                     attributes: requested_attrs}) do
+    unless QueueStore.queue_exists?(queue_name) do
+      raise SQSError, "AWS.SimpleQueueService.NonExistentQueue"
+    end
+
+    attrs =
+      queue_name
+        |> QueueStore.queue_config
+        |> Config.to_outgoing_attrs
+        |> Dict.merge(%{"QueueArn" => Utils.make_arn(queue_name)})
+
+    unless "All" in requested_attrs do
+      attrs = attrs |> Dict.take(requested_attrs)
+    end
+
+    %GetQueueAttributes.Result{attributes: attrs}
   end
 
   def run_action(%ReceiveMessage{} = action) do

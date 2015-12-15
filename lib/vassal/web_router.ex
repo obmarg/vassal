@@ -72,9 +72,10 @@ defmodule Vassal.WebRouter do
     |> put_resp_header("content-type", "application/xml")
     |> send_resp(400, Actions.Response.from_result(error))
   end
-  defp handle_errors(conn, %{reason: unknown}) do
+  defp handle_errors(conn, %{reason: unknown, stack: stack}) do
     Logger.error("Unknown Error:")
     Logger.error(inspect unknown)
+    Logger.error(inspect stack)
     conn
     |> put_resp_header("content-type", "application/xml")
     |> send_resp(400, Actions.Response.from_result(

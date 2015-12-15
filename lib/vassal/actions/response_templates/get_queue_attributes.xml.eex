@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<GetQueueAttributesResponse>
+    <GetQueueAttributesResult>
+      <%= for {attr_name, attr_val} <- result.attributes do %>
+      <Attribute> 
+        <Name><%= attr_name %></Name>
+        <Value><%= attr_val %></Value>
+      </Attribute> 
+      <% end %>
+    </GetQueueAttributesResult>
+    <%= Vassal.Actions.response_metadata %>
+</GetQueueAttributesResponse>

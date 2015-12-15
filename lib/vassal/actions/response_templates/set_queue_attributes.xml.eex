@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<SetQueueAttributesResponse>
+    <%= Vassal.Actions.response_metadata %>
+</SetQueueAttributesResponse>

@@ -3,6 +3,8 @@ defmodule Vassal.Actions.ReceiveMessage do
   Action for sending a message.
   """
 
+  alias Vassal.Utils
+
   @derive [Inspect]
   defstruct [queue_name: nil,
              max_messages: 1,
@@ -16,7 +18,7 @@ defmodule Vassal.Actions.ReceiveMessage do
     max_messages: non_neg_integer,
     visibility_timeout_ms: non_neg_integer | nil,
     wait_time_ms: non_neg_integer | nil,
-    attributes: [:atom],
+    attributes: [String.t],
     message_attributes: [:atom]
   }
 

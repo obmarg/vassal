@@ -35,6 +35,10 @@ defmodule Vassal.Actions do
           Vassal.Actions.ChangeMessageVisibility.from_params(params, queue_name)
         "DeleteQueue" ->
           Vassal.Actions.DeleteQueue.from_params(params, queue_name)
+        "SetQueueAttributes" ->
+          Vassal.Actions.SetQueueAttributes.from_params(params, queue_name)
+        "GetQueueAttributes" ->
+          Vassal.Actions.GetQueueAttributes.from_params(params, queue_name)
         _ ->
           Logger.error("Unknown action #{params["Action"]}")
           raise Vassal.Errors.SQSError, "AWS.SimpleQueueService.InvalidAction"

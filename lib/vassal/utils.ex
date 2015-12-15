@@ -28,4 +28,11 @@ defmodule Vassal.Utils do
     end
   end
 
+  @doc """
+  Builds a fake ARN from a queue_name
+  """
+  def make_arn(queue_name) do
+    "arn:aws:sqs:us-east-1:000000000000:#{queue_name}"
+  end
+
 end

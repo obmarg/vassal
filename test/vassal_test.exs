@@ -178,6 +178,48 @@ defmodule VassalTest do
     assert message[:attributes][:approximate_first_receive_timestamp]
   end
 
+  test "getting all attributes" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    attrs = :erlcloud_sqs.get_queue_attributes(q_name, config)
+    assert attrs[:delay_seconds] == 0
+    assert attrs[:visibility_timeout] == 30
+    refute :redrive_policy in attrs
+    arn = attrs[:queue_arn] |> List.to_string
+    q_str = List.to_string q_name
+    assert String.ends_with?(arn, q_str)
+  end
+
+  test "getting specific attributes" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+    [visibility_timeout: 30] = :erlcloud_sqs.get_queue_attributes(
+      q_name, [:visibility_timeout], config
+    )
+  end
+
+  test "setting attributes" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+
+    redrive_policy = Poison.encode!(
+      %{"deadLetterTargetArn" => Vassal.Utils.make_arn("test_arn"),
+        "maxReceiveCount" => 1}
+    )
+    attributes = [visibility_timeout: 40,
+                  delay_seconds: 50,
+                  redrive_policy: redrive_policy]
+    :erlcloud_sqs.set_queue_attributes(q_name, attributes, config)
+
+    result_attrs = :erlcloud_sqs.get_queue_attributes(
+      q_name, Dict.keys(attributes), config
+    )
+    assert result_attrs[:visibility_timeout] == attributes[:visibility_timeout]
+    assert result_attrs[:delay_seconds] == attributes[:delay_seconds]
+    str_redrive = List.to_string(result_attrs[:redrive_policy])
+    assert str_redrive == attributes[:redrive_policy]
+  end
+
   defp config do
     aws_config(sqs_host: 'localhost',
                sqs_protocol: 'http',

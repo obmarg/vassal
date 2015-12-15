@@ -34,6 +34,7 @@ defmodule Vassal.Mixfile do
      {:fsm, "~> 0.2.0"},
      {:gproc, "~> 0.5.0"},
      {:exactor, "~> 2.2.0"},
+     {:poison, "~> 1.5"},
 
      {:erlcloud, "~> 0.12.0", only: [:test]},
      {:httpoison, "~> 0.8.0", only: [:test]},
