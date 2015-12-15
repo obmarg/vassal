@@ -22,8 +22,8 @@ use Mix.Config
 #
 config :vassal, [
   ip: {0, 0, 0, 0},
-  port: System.env("PORT") || 4567,
-  url: System.env("URL") || "http://localhost:4567"
+  port: System.get_env("PORT") || 4567,
+  url: System.get_env("URL") || "http://localhost:4567"
 ]
 
 # It is also possible to import configuration files, relative to this
