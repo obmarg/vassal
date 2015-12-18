@@ -220,11 +220,14 @@ defmodule VassalTest do
   test "max receives" do
     q_name = random_queue_name
     :erlcloud_sqs.create_queue(q_name, config)
-    attrs = [visibility_timeout: 1, redrive_policy: build_redrive_policy(1)]
+    attrs = [visibility_timeout: 1, redrive_policy: build_redrive_policy(2)]
     :erlcloud_sqs.set_queue_attributes(q_name, attrs, config)
 
     :erlcloud_sqs.send_message(q_name, 'abcd', config)
-    [messages: [message]] = :erlcloud_sqs.receive_message(q_name, config)
+    [messages: [_message]] = :erlcloud_sqs.receive_message(q_name, config)
+
+    :timer.sleep(1000)
+    [messages: [_message]] = :erlcloud_sqs.receive_message(q_name, config)
 
     :timer.sleep(1000)
     [messages: []] = :erlcloud_sqs.receive_message(q_name, config)

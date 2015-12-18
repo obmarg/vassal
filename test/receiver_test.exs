@@ -45,7 +45,7 @@ defmodule VassalQueueReceiverTest do
       context.receiver, %ReceiveMessage{max_messages: 2,
                                         wait_time_ms: 0}
     )
-    assert messages = [{:c}]
+    assert messages == [{:c}]
     assert_in_queue context, 0
   end
 
@@ -64,7 +64,7 @@ defmodule VassalQueueReceiverTest do
       context.receiver, %ReceiveMessage{max_messages: 2,
                                         wait_time_ms: 1000}
     )
-    assert messages = [{:c}]
+    assert messages == [{:c}]
     assert_in_queue context, 0
   end
 

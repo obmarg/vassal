@@ -150,7 +150,7 @@ defmodule Vassal.Actions do
     def from_result(result)
   end
 
-  @moduledoc """
+  @doc """
   Utility function for adding response metadata into our response XML.
   """
   @spec response_metadata :: String.t

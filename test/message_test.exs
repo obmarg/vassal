@@ -13,16 +13,16 @@ defmodule VassalMessageTest do
   end
 
   test "should add to queue immediately when no delay", context do
-    {:ok, pid} = Message.start_link(context.queue,
-                                    %MessageInfo{delay_ms: 0})
+    {:ok, _pid} = Message.start_link(context.queue,
+                                     %MessageInfo{delay_ms: 0})
     :timer.sleep(10)
 
     assert_in_queue context, 1
   end
 
   test "should add to queue after delay", context do
-    {:ok, pid} = Message.start_link(context.queue,
-                                    %MessageInfo{delay_ms: 100})
+    {:ok, _pid} = Message.start_link(context.queue,
+                                     %MessageInfo{delay_ms: 100})
     :timer.sleep(10)
 
     assert_in_queue context, 0
