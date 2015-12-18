@@ -28,6 +28,7 @@ defmodule Vassal.Queue do
   @doc """
   Runs a queue action.
   """
+  @spec run_action(Vassal.Actions.action) :: Vassal.Actions.result
   def run_action(action)
 
   def run_action(%CreateQueue{queue_name: queue_name, attributes: attrs}) do
@@ -75,6 +76,7 @@ defmodule Vassal.Queue do
     %GetQueueAttributes.Result{attributes: attrs}
   end
 
+  @spec run_action(ReceiveMessage.t) :: ReceiveMessage.Result.t
   def run_action(%ReceiveMessage{} = action) do
     receipt_handles = action.queue_name |> ReceiptHandles.for_queue
 
@@ -145,6 +147,7 @@ defmodule Vassal.Queue do
   This function is provided so queues can provide the dead letter functionality.
   Usually messages will be sent by calling run_action with a SendMessage action.
   """
+  @spec send_message(String.t, Message.MessageInfo.t) :: :ok
   def send_message(queue_name, message_info) do
     config = QueueStore.queue_config(queue_name)
     message_info = %Message.MessageInfo{
@@ -157,12 +160,16 @@ defmodule Vassal.Queue do
       Vassal.Queue.MessageSupervisor.for_queue(queue_name),
       [message_info]
     )
+    :ok
   end
 
   @attr_conversions %{sent_timestamp: "SentTimestamp",
                       approx_receive_count: "ApproximateReceiveCount",
                       approx_first_receive: "ApproximateFirstReceiveTimestamp"}
 
+  @spec recv_message_from_pid(pid,
+                              pid,
+                              Vassal.Actions.action) :: ReceiveMessage.Message.t
   defp recv_message_from_pid(message_pid, receipt_handles_pid, action) do
     message_info = Message.receive_message(message_pid,
                                            action.visibility_timeout_ms)

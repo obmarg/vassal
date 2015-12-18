@@ -13,6 +13,17 @@ defmodule Vassal.Queue.Config do
              max_receives: nil,
              dead_letter_queue: nil]
 
+  @type t :: %__MODULE__{
+    delay_ms: non_neg_integer,
+    max_message_bytes:  non_neg_integer,
+    retention_secs:  non_neg_integer,
+    recv_wait_time_ms:  non_neg_integer,
+    visibility_timeout_ms:  non_neg_integer,
+    max_receives: non_neg_integer | nil,
+    dead_letter_queue: String.t | nil
+  }
+
+  @spec from_incoming_attrs(%{}) :: __MODULE__.t
   def from_incoming_attrs(attrs) do
     import Utils, only: [get_param_as_ms: 2, get_param_as_int: 2]
 
@@ -44,6 +55,7 @@ defmodule Vassal.Queue.Config do
     struct(__MODULE__, rv)
   end
 
+  @spec from_incoming_attrs(__MODULE__.t) :: %{}
   def to_outgoing_attrs(config) do
     rv = %{
       "DelaySeconds" => div(config.delay_ms, 1000),

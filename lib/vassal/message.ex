@@ -27,6 +27,20 @@ defmodule Vassal.Message do
                              approx_first_receive: nil,
                              approx_receive_count: 0}]
 
+    @type t :: %__MODULE__{
+      delay_ms: non_neg_integer,
+      default_visibility_timeout_ms: non_neg_integer,
+      message_id: String.t,
+      body_md5: nil,
+      body: <<>>,
+      max_receives: non_neg_integer | nil,
+      dead_letter_queue: String.t | nil,
+      attributes: %{
+        sent_timestamp: non_neg_integer,
+        approx_first_receive: non_neg_integer | nil,
+        approx_receive_count: non_neg_integer
+      }
+    }
   end
 
   defmodule StateMachine do
@@ -98,13 +112,15 @@ defmodule Vassal.Message do
   @doc """
   Starts a message process
   """
+  @spec start_link(String.t, MessageInfo.t) :: GenServer.on_start
   def start_link(queue_name, message_info) do
-    GenServer.start_link(__MODULE__, [queue_name, message_info])
+    GenServer.start_link(__MODULE__, {queue_name, message_info})
   end
 
   @doc """
   Returns a messages data and starts it's visibility timer
   """
+  @spec receive_message(pid, non_neg_integer) :: term
   def receive_message(message_pid, visibility_timeout_ms) do
     GenServer.call(message_pid, {:receive_message, visibility_timeout_ms})
   end
@@ -116,6 +132,7 @@ defmodule Vassal.Message do
   is currently in the queue, we will wait until it is "received" before shutting
   down.
   """
+  @spec delete_message(pid) :: term
   def delete_message(message_pid) do
     GenServer.call(message_pid, :delete_message)
   end
@@ -123,11 +140,13 @@ defmodule Vassal.Message do
   @doc """
   Changes the visibility timeout of a message.
   """
+  @spec change_visibility_timeout(pid, non_neg_integer) :: term
   def change_visibility_timeout(message_pid, timeout_ms) do
     GenServer.call(message_pid, {:change_visibility_timeout, timeout_ms})
   end
 
-  def init([queue_name, message_info]) do
+  @spec init({String.t, MessageInfo.t}) :: term
+  def init({queue_name, message_info}) do
     max_receives = message_info.max_receives || 1000
     sm = StateMachine.new |> StateMachine.start(max_receives)
 
@@ -233,6 +252,7 @@ defmodule Vassal.Message do
     {:noreply, state}
   end
 
+  @spec now() :: non_neg_integer
   defp now do
     :os.system_time(:seconds)
   end

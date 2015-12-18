@@ -14,6 +14,7 @@ defmodule Vassal.QueueStore do
   @doc """
   Adds a queue to the store.  Errors if it already exists
   """
+  @spec add_queue(String.t, Vassal.Queue.Config.t) :: boolean | {:error, term}
   defcall add_queue(queue_name, config) do
     reply(:ets.insert_new(@ets_table, {queue_name, config}))
   end
@@ -21,6 +22,7 @@ defmodule Vassal.QueueStore do
   @doc """
   Removes a queue from the store.
   """
+  @spec remove_queue(String.t) :: :ok | {:error, term}
   defcall remove_queue(queue_name) do
     reply(:ets.delete(@ets_table, queue_name))
   end
@@ -28,6 +30,7 @@ defmodule Vassal.QueueStore do
   @doc """
   Returns true if a queue exists.
   """
+  @spec queue_exists?(String.t) :: boolean
   def queue_exists?(queue_name) do
     case :ets.lookup(@ets_table, queue_name) do
       [{^queue_name, _}] -> true
@@ -40,15 +43,17 @@ defmodule Vassal.QueueStore do
 
   Note that if there are too many queues this _could_ return too many results...
   """
+  @spec list_queues() :: [String.t]
   def list_queues do
-    :ets.traverse @ets_table, fn({queue_name, _}) ->
-      {:continue, queue_name}
+    :ets.foldr @ets_table, [], fn({queue_name, _}, names) ->
+      [queue_name|names]
     end
   end
 
   @doc """
   Gets a queues configuration
   """
+  @spec queue_config(String.t) :: Vassal.Queue.Config.t | nil
   def queue_config(queue_name) do
     case :ets.lookup(@ets_table, queue_name) do
       [{^queue_name, config}] -> config
@@ -59,6 +64,7 @@ defmodule Vassal.QueueStore do
   @doc """
   Sets a queues configuration.
   """
+  @spec queue_config(String.t, Vassal.Queue.Config.t) :: :ok | {:error, term}
   defcall queue_config(queue_name, config) do
     reply(:ets.insert(@ets_table, {queue_name, config}))
   end

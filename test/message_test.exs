@@ -72,7 +72,7 @@ defmodule VassalMessageTest do
 
   test "should shutdown on delete when not in queue", context do
     message = %MessageInfo{default_visibility_timeout_ms: 10}
-    {:ok, pid} = GenServer.start(Message, [context.queue, message])
+    {:ok, pid} = GenServer.start(Message, {context.queue, message})
 
     :timer.sleep(10)
     %MessageInfo{} = Message.receive_message(pid, nil)
@@ -84,7 +84,7 @@ defmodule VassalMessageTest do
 
   test "should shutdown on send_data when in queue", context do
     message = %MessageInfo{default_visibility_timeout_ms: 10}
-    {:ok, pid} = GenServer.start(Message, [context.queue, message])
+    {:ok, pid} = GenServer.start(Message, {context.queue, message})
 
     :timer.sleep(10)
     %MessageInfo{} = Message.receive_message(pid, nil)
@@ -105,7 +105,7 @@ defmodule VassalMessageTest do
 
   test "receive count increases on every receive", context do
     message = %MessageInfo{default_visibility_timeout_ms: 1}
-    {:ok, pid} = GenServer.start(Message, [context.queue, message])
+    {:ok, pid} = GenServer.start(Message, {context.queue, message})
 
     Enum.each 1..5, fn (n) ->
       :timer.sleep(5)
@@ -116,7 +116,7 @@ defmodule VassalMessageTest do
 
   test "timestamps are correct", context do
     message = %MessageInfo{default_visibility_timeout_ms: 1}
-    {:ok, pid} = GenServer.start(Message, [context.queue, message])
+    {:ok, pid} = GenServer.start(Message, {context.queue, message})
     :timer.sleep(10)
     msg = Message.receive_message(pid, nil)
 

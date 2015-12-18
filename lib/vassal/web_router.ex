@@ -52,6 +52,7 @@ defmodule Vassal.WebRouter do
     |> send_resp(200, handle_request(queue_name, conn))
   end
 
+  @spec handle_root_request(Plug.Conn.params) :: String.t
   defp handle_root_request(%{params: params} = conn) do
     queue_name = nil
     if Dict.has_key?(params, "QueueUrl") do
@@ -62,6 +63,7 @@ defmodule Vassal.WebRouter do
     handle_request(queue_name, conn)
   end
 
+  @spec handle_request(String.t, Plug.Conn.params) :: String.t
   defp handle_request(queue_name, %{params: params}) do
     params
     |> log_action
@@ -77,6 +79,7 @@ defmodule Vassal.WebRouter do
     |> put_resp_header("connection", "close")
     |> send_resp(400, Actions.Response.from_result(error))
   end
+
   defp handle_errors(conn, %{reason: unknown, stack: stack}) do
     Logger.error("Unknown Error:")
     Logger.error(inspect unknown)
@@ -89,6 +92,7 @@ defmodule Vassal.WebRouter do
         ))
   end
 
+  @spec log_action(Plug.Conn.params) :: Plug.Conn.params
   defp log_action(params) do
     if Mix.env != :test do
       # Don't log when we're testing as it obscures test output.

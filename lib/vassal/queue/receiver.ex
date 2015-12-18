@@ -28,10 +28,10 @@ defmodule Vassal.Queue.Receiver do
 
   - `receiver` - The receiver to tell about this request.
   - `action` - The ReceiveMessage action representing the request.
-  - `form` - The GenServer `from` parameter that should be used to reply.
 
   Returns a list of message PIDs that can be queried for their data.
   """
+  @spec receive_messages(pid, Vassal.Actions.ReceiveMessage.t) :: [pid]
   def receive_messages(receiver, action) do
     req_id = UUID.uuid1
     GenServer.cast(receiver, %ReceiveRequest{action: action,
@@ -56,6 +56,7 @@ defmodule Vassal.Queue.Receiver do
   @doc """
   Returns the PID of a Receiver process when given the queue name.
   """
+  @spec for_queue(String.t, non_neg_integer) :: pid
   def for_queue(queue_name, timeout \\ 50) do
     {pid, _} = queue_name |> to_gproc_name |> :gproc.await(timeout)
     pid
