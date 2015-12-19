@@ -14,9 +14,9 @@ defmodule Vassal.Actions.ChangeMessageVisibility do
     visibility_timeout_ms: non_neg_integer
   }
 
-  def from_params(params, queue_name) do
+  def from_params(params) do
     {vis_secs, ""} = Integer.parse(params["VisibilityTimeout"])
-    %__MODULE__{queue_name: queue_name,
+    %__MODULE__{queue_name: params["QueueName"],
                 receipt_handle: params["ReceiptHandle"],
                 visibility_timeout_ms: vis_secs * 1000}
   end

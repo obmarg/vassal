@@ -16,9 +16,9 @@ defmodule Vassal.Actions.SendMessage do
     message_attributes: %{:atom => String.t}
   }
 
-  def from_params(params, queue_name) do
+  def from_params(params) do
     {delay_secs, ""} = Integer.parse(Dict.get(params, :Delay, "0"))
-    %__MODULE__{queue_name: queue_name,
+    %__MODULE__{queue_name: params["QueueName"],
                 message_body: params["MessageBody"],
                 delay_ms: delay_secs * 1000,
                 message_attributes: parse_attrs(params)}

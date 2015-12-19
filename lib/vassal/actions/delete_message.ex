@@ -12,8 +12,8 @@ defmodule Vassal.Actions.DeleteMessage do
     receipt_handle: String.t,
   }
 
-  def from_params(params, queue_name) do
-    %__MODULE__{queue_name: queue_name,
+  def from_params(params) do
+    %__MODULE__{queue_name: params["QueueName"],
                 receipt_handle: params["ReceiptHandle"]}
   end
 

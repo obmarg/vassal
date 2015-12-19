@@ -34,36 +34,15 @@ defmodule Vassal.Actions do
   @doc """
   Converts incoming parameters into a queue action.
   """
-  @spec params_to_action(Plug.Conn.params, String.t) :: action
-  def params_to_action(params, queue_name) do
-    if queue_name == :nil do
-      case params["Action"] do
-        "CreateQueue" -> Vassal.Actions.CreateQueue.from_params(params)
-        "GetQueueUrl" -> Vassal.Actions.GetQueueUrl.from_params(params)
-        _ ->
-          Logger.error("Unknown action #{params["Action"]}")
-          raise Vassal.Errors.SQSError, "AWS.SimpleQueueService.InvalidAction"
-      end
-    else
-      case params["Action"] do
-        "SendMessage" ->
-          Vassal.Actions.SendMessage.from_params(params, queue_name)
-        "ReceiveMessage" ->
-          Vassal.Actions.ReceiveMessage.from_params(params, queue_name)
-        "DeleteMessage" ->
-          Vassal.Actions.DeleteMessage.from_params(params, queue_name)
-        "ChangeMessageVisibility" ->
-          Vassal.Actions.ChangeMessageVisibility.from_params(params, queue_name)
-        "DeleteQueue" ->
-          Vassal.Actions.DeleteQueue.from_params(params, queue_name)
-        "SetQueueAttributes" ->
-          Vassal.Actions.SetQueueAttributes.from_params(params, queue_name)
-        "GetQueueAttributes" ->
-          Vassal.Actions.GetQueueAttributes.from_params(params, queue_name)
-        _ ->
-          Logger.error("Unknown action #{params["Action"]}")
-          raise Vassal.Errors.SQSError, "AWS.SimpleQueueService.InvalidAction"
-      end
+  @spec params_to_action(Plug.Conn.params) :: action
+  def params_to_action(params) do
+    try do
+      module = Module.concat([Vassal, Actions, params["Action"]])
+      module.from_params(params)
+    rescue
+      UndefinedFunctionError ->
+        Logger.error("Unknown action #{params["Action"]}")
+        raise Vassal.Errors.SQSError, "AWS.SimpleQueueService.InvalidAction"
     end
   end
 

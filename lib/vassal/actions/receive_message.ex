@@ -22,12 +22,12 @@ defmodule Vassal.Actions.ReceiveMessage do
     message_attributes: [:atom]
   }
 
-  def from_params(params, queue_name) do
+  def from_params(params) do
     vis_ms = Utils.get_param_as_ms(params, "VisibilityTimeout")
     wait_ms = Utils.get_param_as_ms(params, "WaitTimeSeconds")
     {max_msgs, ""} = Integer.parse(Dict.get(params, "MaxNumberOfMessages", "1"))
 
-    %__MODULE__{queue_name: queue_name,
+    %__MODULE__{queue_name: params["QueueName"],
                 max_messages: max_msgs,
                 visibility_timeout_ms: vis_ms,
                 wait_time_ms: wait_ms,

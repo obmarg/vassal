@@ -11,8 +11,8 @@ defmodule Vassal.Actions.SetQueueAttributes do
     attributes: %{:atom => String.t}
   }
 
-  def from_params(params, queue_name) do
-    %__MODULE__{queue_name: queue_name,
+  def from_params(params) do
+    %__MODULE__{queue_name: params["QueueName"],
                 attributes: parse_attrs(params)}
   end
 

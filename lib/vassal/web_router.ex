@@ -42,32 +42,35 @@ defmodule Vassal.WebRouter do
     conn
     |> put_resp_header("content-type", "application/xml")
     |> put_resp_header("connection", "close")
-    |> send_resp(200, handle_request(queue_name, conn))
+    |> send_resp(200, handle_request(Map.put(conn.params,
+                                             "QueueName",
+                                             queue_name)))
   end
 
   post "/:queue_name" do
     conn
     |> put_resp_header("content-type", "application/xml")
     |> put_resp_header("connection", "close")
-    |> send_resp(200, handle_request(queue_name, conn))
+    |> send_resp(200, handle_request(Map.put(conn.params,
+                                             "QueueName",
+                                             queue_name)))
   end
 
   @spec handle_root_request(Plug.Conn.params) :: String.t
   defp handle_root_request(%{params: params} = conn) do
-    queue_name = nil
     if Dict.has_key?(params, "QueueUrl") do
-      # This is actually a queue request, lets forward it on...
       queue_name = params["QueueUrl"] |> String.split("/") |> List.last
+      handle_request(Map.put(params, "QueueName", queue_name))
+    else
+      handle_request(params)
     end
-
-    handle_request(queue_name, conn)
   end
 
-  @spec handle_request(String.t, Plug.Conn.params) :: String.t
-  defp handle_request(queue_name, %{params: params}) do
+  @spec handle_request(Plug.Conn.params) :: String.t
+  defp handle_request(params) do
     params
     |> log_action
-    |> Actions.params_to_action(queue_name)
+    |> Actions.params_to_action
     |> Actions.valid!
     |> Queue.run_action
     |> Actions.Response.from_result

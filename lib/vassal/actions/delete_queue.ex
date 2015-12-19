@@ -10,8 +10,8 @@ defmodule Vassal.Actions.DeleteQueue do
     queue_name: String.t
   }
 
-  def from_params(_params, queue_name) do
-    %__MODULE__{queue_name: queue_name}
+  def from_params(params) do
+    %__MODULE__{queue_name: params["QueueName"]}
   end
 
   defimpl Vassal.Actions.ActionValidator, for: __MODULE__ do
