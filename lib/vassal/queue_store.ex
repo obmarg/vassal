@@ -68,9 +68,10 @@ defmodule Vassal.QueueStore do
   """
   @spec list_queues() :: [String.t]
   def list_queues do
-    :ets.foldr @ets_table, [], fn({queue_name, _}, names) ->
+    func = fn({queue_name, _}, names) ->
       [queue_name|names]
     end
+    :ets.foldr func, [], @ets_table
   end
 
   @doc """
@@ -115,12 +116,6 @@ defmodule Vassal.QueueStore do
 
   @spec get_queue(String.t) :: %Queues{}
   defp get_queue(queue_name) do
-    import Ecto.Query
-
-    Vassal.Repo.one(
-      from q in Queues,
-        where: q.name == ^queue_name,
-        select: q
-    )
+    Vassal.Repo.get_by(Queues, name: queue_name)
   end
 end

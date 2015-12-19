@@ -27,7 +27,7 @@ config :vassal,
 
 config :vassal, Vassal.Repo,
   adapter: Sqlite.Ecto,
-  database: "vassal.db"
+  database: if Mix.env != :test, do: "vassal.db", else: "test.db"
 
 
 # It is also possible to import configuration files, relative to this

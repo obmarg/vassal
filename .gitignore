@@ -9,3 +9,6 @@ rel/
 tarballs/
 
 .vagrant/
+
+test.db
+vassal.db
