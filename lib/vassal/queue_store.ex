@@ -6,8 +6,13 @@ defmodule Vassal.QueueStore do
 
   @ets_table __MODULE__
 
+  alias Vassal.QueueStore.Queues
+
   defstart start_link do
     :ets.new(@ets_table, [:named_table, read_concurrency: true])
+    Enum.each get_db_queues, fn {queue_name, config} ->
+      true = :ets.insert_new(@ets_table, {queue_name, config})
+    end
     initial_state(nil)
   end
 
@@ -16,7 +21,19 @@ defmodule Vassal.QueueStore do
   """
   @spec add_queue(String.t, Vassal.Queue.Config.t) :: boolean | {:error, term}
   defcall add_queue(queue_name, config) do
-    reply(:ets.insert_new(@ets_table, {queue_name, config}))
+    changeset =
+      config
+        |> Map.from_struct
+        |> Map.put(:name, queue_name)
+        |> Queues.insert_changeset
+
+    case Vassal.Repo.insert(changeset) do
+      {:ok, _model} ->
+        true = :ets.insert_new(@ets_table, {queue_name, config})
+        reply(true)
+      {:error, _changeset} ->
+        reply(false)
+    end
   end
 
   @doc """
@@ -24,7 +41,13 @@ defmodule Vassal.QueueStore do
   """
   @spec remove_queue(String.t) :: :ok | {:error, term}
   defcall remove_queue(queue_name) do
-    reply(:ets.delete(@ets_table, queue_name))
+    case Vassal.Repo.delete(get_queue(queue_name)) do
+      {:ok, _} ->
+        true = :ets.delete(@ets_table, queue_name)
+        reply(:ok)
+      {:error, _changeset} ->
+        reply({:error, :db})
+    end
   end
 
   @doc """
@@ -66,6 +89,38 @@ defmodule Vassal.QueueStore do
   """
   @spec queue_config(String.t, Vassal.Queue.Config.t) :: :ok | {:error, term}
   defcall queue_config(queue_name, config) do
-    reply(:ets.insert(@ets_table, {queue_name, config}))
+    db_config = Map.from_struct(config)
+    changeset = queue_name |> get_queue |> Queues.update_changeset(db_config)
+
+    case Vassal.Repo.update(changeset) do
+      {:ok, _model} ->
+        true = :ets.insert(@ets_table, {queue_name, config})
+        reply(:ok)
+      {:error, _changeset} ->
+        reply({:error, :db})
+    end
+  end
+
+  @spec get_db_queues() :: [{String.t, Vassal.Queue.Config.t}]
+  defp get_db_queues do
+    import Ecto.Query
+
+    query = from q in Queues, select: q
+    for queue <- Vassal.Repo.all(query) do
+      config_map = queue |> Map.from_struct |> Map.drop([:name])
+
+      {queue.name, struct(Vassal.Queue.Config, config_map)}
+    end
+  end
+
+  @spec get_queue(String.t) :: %Queues{}
+  defp get_queue(queue_name) do
+    import Ecto.Query
+
+    Vassal.Repo.one(
+      from q in Queues,
+        where: q.name == ^queue_name,
+        select: q
+    )
   end
 end

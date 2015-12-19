@@ -15,6 +15,7 @@ defmodule Vassal do
                     ip: Application.get_env(:vassal, :ip)]
 
     children = [
+      supervisor(Vassal.Repo, []),
       worker(Vassal.QueueStore, []),
       supervisor(
         Supervisor,

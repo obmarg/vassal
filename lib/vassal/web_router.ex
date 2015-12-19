@@ -57,7 +57,7 @@ defmodule Vassal.WebRouter do
   end
 
   @spec handle_root_request(Plug.Conn.params) :: String.t
-  defp handle_root_request(%{params: params} = conn) do
+  defp handle_root_request(%{params: params}) do
     if Dict.has_key?(params, "QueueUrl") do
       queue_name = params["QueueUrl"] |> String.split("/") |> List.last
       handle_request(Map.put(params, "QueueName", queue_name))
