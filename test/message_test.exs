@@ -121,8 +121,8 @@ defmodule VassalMessageTest do
     msg = Message.receive_message(pid, nil)
 
     now = :os.system_time(:seconds)
-    assert_in_delta msg.attributes.approx_first_receive, now, 1
-    assert_in_delta msg.attributes.sent_timestamp, now, 1
+    assert_in_delta msg.attributes.approx_first_receive, now, 2
+    assert_in_delta msg.attributes.sent_timestamp, now, 2
   end
 
   defp assert_in_queue(context, num) do

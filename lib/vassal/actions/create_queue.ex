@@ -14,23 +14,7 @@ defmodule Vassal.Actions.CreateQueue do
   @spec from_params(Plug.Conn.params) :: __MODULE__.t
   def from_params(params) do
     %__MODULE__{queue_name: params["QueueName"],
-                attributes: parse_attrs(params)}
-  end
-
-  @spec parse_attrs(Plug.Conn.params) :: %{:atom => String.t}
-  defp parse_attrs(params) do
-    params
-    |> Enum.filter(fn ({p, _}) -> String.contains?(p, "Attribute.") end)
-    |> Enum.sort_by(fn ({param, _}) -> param end)
-    |> Enum.map(fn ({_, value}) -> value end)
-    |> Enum.chunk(2)
-    |> Enum.map(fn ([key, val]) -> {attr_name_to_atom(key), val} end)
-    |> Enum.into(%{})
-  end
-
-  @spec attr_name_to_atom(String.t) :: :atom
-  defp attr_name_to_atom(attr_name) do
-    attr_name |> Mix.Utils.underscore |> String.to_existing_atom
+                attributes: Vassal.Utils.parse_attribute_map(params)}
   end
 
   defimpl Vassal.Actions.ActionValidator, for: __MODULE__ do
