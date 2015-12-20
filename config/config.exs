@@ -20,11 +20,15 @@ use Mix.Config
 #
 #     config :logger, level: :info
 #
-config :vassal, [
+config :vassal,
   ip: {0, 0, 0, 0},
   port: System.get_env("PORT") || 4567,
   url: System.get_env("URL") || "http://localhost:4567"
-]
+
+config :vassal, Vassal.Repo,
+  adapter: Sqlite.Ecto,
+  database: if Mix.env != :test, do: "vassal.db", else: "test.db"
+
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment

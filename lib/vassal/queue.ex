@@ -35,7 +35,7 @@ defmodule Vassal.Queue do
     true = QueueStore.add_queue(queue_name,
                                 Config.from_incoming_attrs(attrs))
 
-    {:ok, _pid} = Supervisor.start_child(Vassal.QueueSupervisor, [queue_name])
+    :ok = Vassal.QueuesSupervisor.add_queue(queue_name)
     %CreateQueue.Result{queue_url: queue_url(queue_name)}
   end
 
@@ -135,8 +135,7 @@ defmodule Vassal.Queue do
   def run_action(%DeleteQueue{} = action) do
     QueueStore.remove_queue(action.queue_name)
 
-    queue_sup = Vassal.Queue.Supervisor.for_queue(action.queue_name)
-    :ok = Supervisor.terminate_child(Vassal.QueueSupervisor, queue_sup)
+    :ok = Vassal.QueuesSupervisor.delete_queue(action.queue_name)
 
     %DeleteQueue.Result{}
   end

@@ -14,13 +14,12 @@ defmodule Vassal do
     conn_details = [port: Application.get_env(:vassal, :port),
                     ip: Application.get_env(:vassal, :ip)]
 
+
     children = [
+      supervisor(Vassal.Repo, []),
+      worker(Vassal.Repo.Migrator, [], restart: :temporary),
       worker(Vassal.QueueStore, []),
-      supervisor(
-        Supervisor,
-        [[supervisor(Vassal.Queue.Supervisor, [], restart: :transient)],
-         [strategy: :simple_one_for_one, name: Vassal.QueueSupervisor]]
-      ),
+      supervisor(Vassal.QueuesSupervisor, []),
       Plug.Adapters.Cowboy.child_spec(
         :http, Vassal.WebRouter, [], conn_details
       )

@@ -15,7 +15,7 @@ defmodule Vassal.Mixfile do
   # Type "mix help compile.app" for more information
   def application do
     [applications: [:logger, :cowboy, :plug, :gproc, :poison, :uuid, :exactor,
-                    :fsm, :mix],
+                    :fsm, :mix, :ecto, :sqlite_ecto],
      mod: {Vassal, []}]
   end
 
@@ -36,6 +36,8 @@ defmodule Vassal.Mixfile do
      {:gproc, "~> 0.5.0"},
      {:exactor, "~> 2.2.0"},
      {:poison, "~> 1.5"},
+     {:ecto, "~> 1.1.0"},
+     {:sqlite_ecto, "~> 1.0.0"},
 
      # For building releases
      {:exrm, "~> 1.0.0-rc7"},

@@ -58,7 +58,7 @@ Some of these may be implemented in the near future:
 - Authentication / permissions, or anything related.
 - MD5 checksums.
 - SenderId Attribute on messages.
-- Persistence.  All data & queues will be lost on restart.
+- MessageRetentionPeriod is currently ignored.
 
 ## Existing Works
 
