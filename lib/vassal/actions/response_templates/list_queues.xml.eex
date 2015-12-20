@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<ListQueuesResponse>
+    <ListQueuesResult>
+      <%= for queue_url <- result.queue_urls do %>
+        <QueueUrl><%= queue_url %></QueueUrl>
+      <% end %>
+    </ListQueuesResult>
+    <%= Vassal.Actions.response_metadata %>
+</ListQueuesResponse>

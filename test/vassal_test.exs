@@ -253,6 +253,22 @@ defmodule VassalTest do
     [messages: []] = :erlcloud_sqs.receive_message(q_name, config)
   end
 
+  test "list queues" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+
+    queues = :erlcloud_sqs.list_queues(config)
+    assert 'http://localhost:4567/#{q_name}' in queues
+  end
+
+  test "list queues with prefix" do
+    q_name = random_queue_name
+    :erlcloud_sqs.create_queue(q_name, config)
+
+    queues = :erlcloud_sqs.list_queues(q_name, config)
+    assert queues == ['http://localhost:4567/#{q_name}']
+  end
+
   defp config do
     aws_config(sqs_host: 'localhost',
                sqs_protocol: 'http',
