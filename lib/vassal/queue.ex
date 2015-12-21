@@ -19,6 +19,7 @@ defmodule Vassal.Queue do
   alias Vassal.Actions.DeleteQueue
   alias Vassal.Actions.SetQueueAttributes
   alias Vassal.Actions.GetQueueAttributes
+  alias Vassal.Actions.ListQueues
 
   alias Vassal.Errors.SQSError
   alias Vassal.Message
@@ -138,6 +139,15 @@ defmodule Vassal.Queue do
     :ok = Vassal.QueuesSupervisor.delete_queue(action.queue_name)
 
     %DeleteQueue.Result{}
+  end
+
+  def run_action(%ListQueues{prefix: prefix}) do
+    queues = QueueStore.list_queues
+    if prefix do
+      queues = queues |> Enum.filter(&(String.starts_with? &1, prefix))
+    end
+
+    %ListQueues.Result{queue_urls: queues |> Enum.map(&queue_url/1)}
   end
 
   @doc """

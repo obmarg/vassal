@@ -71,6 +71,7 @@ defmodule Vassal.QueueStore do
     func = fn({queue_name, _}, names) ->
       [queue_name|names]
     end
+
     :ets.foldr func, [], @ets_table
   end
 
