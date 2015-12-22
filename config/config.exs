@@ -30,6 +30,14 @@ config :vassal, Vassal.Repo,
   adapter: Sqlite.Ecto,
   database: if Mix.env != :test, do: "vassal.db", else: "test.db"
 
+config :exometer, report: [reporters: [{:exometer_report_statsd,
+                                        [hostname: '192.168.99.100',
+                                         port: 8125]}]]
+config :elixometer,
+  reporter: :exometer_report_statsd,
+  env: Mix.env,
+  metric_prefix: "vassal",
+  update_frequency: 1000
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment

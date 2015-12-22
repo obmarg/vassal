@@ -31,6 +31,7 @@ defmodule Vassal.Queue.QueueMessages do
   Adds a message process into the queue.
   """
   def enqueue(queue_messages_pid, message_pid) do
+    Vassal.Stats.update_counter("message.enqueue", 1)
     Agent.update(queue_messages_pid, &(List.insert_at(&1, -1, message_pid)))
   end
 
@@ -41,6 +42,7 @@ defmodule Vassal.Queue.QueueMessages do
   actually be processed.
   """
   def requeue(queue_messages_pid, message_pids) do
+    Vassal.Stats.update_counter("message.requeue", 1)
     Agent.update queue_messages_pid, fn (list) ->
       Enum.reduce(message_pids, list, &(List.insert_at &2, 0, &1))
     end
@@ -50,6 +52,7 @@ defmodule Vassal.Queue.QueueMessages do
   Removes some message processes from the queue.
   """
   def dequeue(queue_messages_pid, max_to_receive) do
+    Vassal.Stats.update_counter("message.dequeue", 1)
     Agent.get_and_update(queue_messages_pid, &(Enum.split(&1, max_to_receive)))
   end
 

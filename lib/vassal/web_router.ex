@@ -7,10 +7,7 @@ defmodule Vassal.WebRouter do
   use Plug.Router
   use Plug.ErrorHandler
 
-  if Mix.env != :test do
-    # Don't log when we're testing as it obscures test output.
-    plug Plug.Logger
-  end
+  plug Vassal.ElixometerPlug
 
   plug Plug.Parsers, parsers: [:urlencoded]
   plug :match

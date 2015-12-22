@@ -16,6 +16,8 @@ defmodule Vassal do
 
 
     children = [
+      # TODO: Get this supervisor working...
+      supervisor(Task.Supervisor, [], name: Vassal.Stats.Supervisor),
       supervisor(Vassal.Repo, []),
       worker(Vassal.Repo.Migrator, [], restart: :temporary),
       worker(Vassal.QueueStore, []),
