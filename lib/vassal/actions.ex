@@ -37,10 +37,10 @@ defmodule Vassal.Actions do
   @spec params_to_action(Plug.Conn.params) :: action
   def params_to_action(params) do
     try do
-      module = Module.concat([Vassal, Actions, params["Action"]])
+      module = Module.safe_concat([Vassal, Actions, params["Action"]])
       module.from_params(params)
     rescue
-      UndefinedFunctionError ->
+      _ in [UndefinedFunctionError, ArgumentError] ->
         Logger.error("Unknown action #{params["Action"]}")
         raise Vassal.Errors.SQSError, "AWS.SimpleQueueService.InvalidAction"
     end
