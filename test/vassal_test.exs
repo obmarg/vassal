@@ -1,4 +1,5 @@
 defmodule VassalTest do
+  use ExUnitFixtures
   use ExUnit.Case
   doctest Vassal
 
@@ -9,30 +10,39 @@ defmodule VassalTest do
                    from_lib: "erlcloud/include/erlcloud_aws.hrl")
   )
 
+  deffixture queue do
+    name = random_queue_name
+    [queue_url: _] = :erlcloud_sqs.create_queue(name, config)
+
+    on_exit fn ->
+      :erlcloud_sqs.delete_queue(name, config)
+    end
+
+    name
+  end
+
   test "can create queue" do
     :erlcloud_sqs.create_queue(random_queue_name, config)
   end
 
-  test "can get queue url" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
+  @tag fixtures: [:queue]
+  test "can get queue url", %{queue: queue} do
     # GRR, erlcloud has no get_queue_url.
     # Let's hack it together!
     HTTPoison.start
     resp = HTTPoison.get!(
-      "http://localhost:4567/?Action=GetQueueUrl&QueueName=#{q_name}"
+      "http://localhost:4567/?Action=GetQueueUrl&QueueName=#{queue}"
     )
     assert resp.status_code == 200
-    assert String.contains?(resp.body, "http://localhost:4567/#{q_name}")
+    assert String.contains?(resp.body, "http://localhost:4567/#{queue}")
   end
 
   test "getting queue url for non existent queue" do
-    q_name = random_queue_name
     # GRR, erlcloud has no get_queue_url.
     # Let's hack it together!
     HTTPoison.start
     resp = HTTPoison.get!(
-      "http://localhost:4567/?Action=GetQueueUrl&QueueName=#{q_name}"
+      "http://localhost:4567/?Action=GetQueueUrl&QueueName=missing_queue"
     )
     assert resp.status_code == 400
     assert String.contains?(resp.body,
@@ -49,51 +59,46 @@ defmodule VassalTest do
                             "AWS.SimpleQueueService.InvalidAction")
   end
 
-  test "sending a message" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-    :erlcloud_sqs.send_message(q_name, 'abcd', config)
+  @tag fixtures: [:queue]
+  test "sending a message", %{queue: queue} do
+    :erlcloud_sqs.send_message(queue, 'abcd', config)
   end
 
-  test "receiving a message" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-    send_resp = :erlcloud_sqs.send_message(q_name, 'abcd', config)
-    [messages: [message]] = :erlcloud_sqs.receive_message(q_name, [], 2, config)
+  @tag fixtures: [:queue]
+  test "receiving a message", %{queue: queue} do
+    send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
+    [messages: [message]] = :erlcloud_sqs.receive_message(queue, [], 2, config)
     assert message[:message_id] == send_resp[:message_id]
     assert message[:body] == 'abcd'
   end
 
-  test "receiving no messages" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-    [messages: []] = :erlcloud_sqs.receive_message(q_name, [], 2, config)
+  @tag fixtures: [:queue]
+  test "receiving no messages", %{queue: queue} do
+    [messages: []] = :erlcloud_sqs.receive_message(queue, [], 2, config)
   end
 
-  test "receiving messages with wait" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
+  @tag fixtures: [:queue]
+  test "receiving messages with wait", %{queue: queue} do
     spawn_link(fn ->
       :timer.sleep(500)
-      :erlcloud_sqs.send_message(q_name, 'abcd', config)
-      :erlcloud_sqs.send_message(q_name, 'abcd', config)
+      :erlcloud_sqs.send_message(queue, 'abcd', config)
+      :erlcloud_sqs.send_message(queue, 'abcd', config)
     end)
 
     [messages: [message1, message2]] = :erlcloud_sqs.receive_message(
-      q_name, [], 2, 30, 1, config
+      queue, [], 2, 30, 1, config
     )
     assert message1[:body] == 'abcd'
     assert message2[:body] == 'abcd'
     assert message1[:message_id] != message2[:message_id]
   end
 
-  test "re-receive message after visibility timeout" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-    send_resp = :erlcloud_sqs.send_message(q_name, 'abcd', config)
+  @tag fixtures: [:queue]
+  test "re-receive message after visibility timeout", %{queue: queue} do
+    send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
 
     [messages: [message]] = :erlcloud_sqs.receive_message(
-      q_name, [], 2, 1, config
+      queue, [], 2, 1, config
     )
 
     assert message[:body] == 'abcd'
@@ -101,51 +106,49 @@ defmodule VassalTest do
     :timer.sleep(1000)
 
     [messages: [message]] = :erlcloud_sqs.receive_message(
-      q_name, [], 2, 1, config
+      queue, [], 2, 1, config
     )
     assert message[:body] == 'abcd'
     assert message[:message_id] == send_resp[:message_id]
   end
 
-  test "deleting a message" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-    send_resp = :erlcloud_sqs.send_message(q_name, 'abcd', config)
+  @tag fixtures: [:queue]
+  test "deleting a message", %{queue: queue} do
+    send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
 
     [messages: [message]] = :erlcloud_sqs.receive_message(
-      q_name, [], 2, 1, config
+      queue, [], 2, 1, config
     )
 
     assert message[:body] == 'abcd'
     assert message[:message_id] == send_resp[:message_id]
-    :erlcloud_sqs.delete_message(q_name, message[:receipt_handle], config)
+    :erlcloud_sqs.delete_message(queue, message[:receipt_handle], config)
     :timer.sleep(1000)
 
-    [messages: []] = :erlcloud_sqs.receive_message(q_name, [], 2, 1, config)
+    [messages: []] = :erlcloud_sqs.receive_message(queue, [], 2, 1, config)
   end
 
-  test "changing message visibility" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-    send_resp = :erlcloud_sqs.send_message(q_name, 'abcd', config)
+  @tag fixtures: [:queue]
+  test "changing message visibility", %{queue: queue} do
+    send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
 
     [messages: [message]] = :erlcloud_sqs.receive_message(
-      q_name, [], 2, 1, config
+      queue, [], 2, 1, config
     )
 
     assert message[:body] == 'abcd'
     assert message[:message_id] == send_resp[:message_id]
-    :erlcloud_sqs.change_message_visibility(q_name, message[:receipt_handle],
+    :erlcloud_sqs.change_message_visibility(queue, message[:receipt_handle],
                                             1, config)
     :timer.sleep(1000)
 
     [messages: []] = :erlcloud_sqs.receive_message(
-      q_name, [], 2, 1, config
+      queue, [], 2, 1, config
     )
 
     :timer.sleep(1100)
     [messages: [message]] = :erlcloud_sqs.receive_message(
-      q_name, [], 2, 1, config
+      queue, [], 2, 1, config
     )
     assert message[:body] == 'abcd'
     assert message[:message_id] == send_resp[:message_id]
@@ -162,12 +165,11 @@ defmodule VassalTest do
     end
   end
 
-  test "receiving with attributes" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-    send_resp = :erlcloud_sqs.send_message(q_name, 'abcd', config)
+  @tag fixtures: [:queue]
+  test "receiving with attributes", %{queue: queue} do
+    send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
     [messages: [message]] = :erlcloud_sqs.receive_message(
-      q_name, [:all], 2, config
+      queue, [:all], 2, config
     )
 
     assert message[:message_id] == send_resp[:message_id]
@@ -178,38 +180,34 @@ defmodule VassalTest do
     assert message[:attributes][:approximate_first_receive_timestamp]
   end
 
-  test "getting all attributes" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-    attrs = :erlcloud_sqs.get_queue_attributes(q_name, config)
+  @tag fixtures: [:queue]
+  test "getting all attributes", %{queue: queue} do
+    attrs = :erlcloud_sqs.get_queue_attributes(queue, config)
     assert attrs[:delay_seconds] == 0
     assert attrs[:visibility_timeout] == 30
     refute :redrive_policy in attrs
     arn = attrs[:queue_arn] |> List.to_string
-    q_str = List.to_string q_name
+    q_str = List.to_string queue
     assert String.ends_with?(arn, q_str)
   end
 
-  test "getting specific attributes" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
+  @tag fixtures: [:queue]
+  test "getting specific attributes", %{queue: queue} do
     [visibility_timeout: 30] = :erlcloud_sqs.get_queue_attributes(
-      q_name, [:visibility_timeout], config
+      queue, [:visibility_timeout], config
     )
   end
 
-  test "setting attributes" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-
+  @tag fixtures: [:queue]
+  test "setting attributes", %{queue: queue} do
     redrive_policy = build_redrive_policy(1, "test_arn")
     attributes = [visibility_timeout: 40,
                   delay_seconds: 50,
                   redrive_policy: redrive_policy]
-    :erlcloud_sqs.set_queue_attributes(q_name, attributes, config)
+    :erlcloud_sqs.set_queue_attributes(queue, attributes, config)
 
     result_attrs = :erlcloud_sqs.get_queue_attributes(
-      q_name, Dict.keys(attributes), config
+      queue, Dict.keys(attributes), config
     )
     assert result_attrs[:visibility_timeout] == attributes[:visibility_timeout]
     assert result_attrs[:delay_seconds] == attributes[:delay_seconds]
@@ -217,56 +215,50 @@ defmodule VassalTest do
     assert str_redrive == attributes[:redrive_policy]
   end
 
-  test "max receives" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
+  @tag fixtures: [:queue]
+  test "max receives", %{queue: queue} do
     attrs = [visibility_timeout: 1, redrive_policy: build_redrive_policy(2)]
-    :erlcloud_sqs.set_queue_attributes(q_name, attrs, config)
+    :erlcloud_sqs.set_queue_attributes(queue, attrs, config)
 
-    :erlcloud_sqs.send_message(q_name, 'abcd', config)
-    [messages: [_message]] = :erlcloud_sqs.receive_message(q_name, config)
-
-    :timer.sleep(1000)
-    [messages: [_message]] = :erlcloud_sqs.receive_message(q_name, config)
+    :erlcloud_sqs.send_message(queue, 'abcd', config)
+    [messages: [_message]] = :erlcloud_sqs.receive_message(queue, config)
 
     :timer.sleep(1000)
-    [messages: []] = :erlcloud_sqs.receive_message(q_name, config)
+    [messages: [_message]] = :erlcloud_sqs.receive_message(queue, config)
+
+    :timer.sleep(1000)
+    [messages: []] = :erlcloud_sqs.receive_message(queue, config)
   end
 
-  test "dead letter queues" do
-    q_name = random_queue_name
+  @tag fixtures: [:queue]
+  test "dead letter queues", %{queue: queue} do
     dlq_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
     :erlcloud_sqs.create_queue(dlq_name, config)
     attrs = [visibility_timeout: 1,
              redrive_policy: build_redrive_policy(1, dlq_name)]
-    :erlcloud_sqs.set_queue_attributes(q_name, attrs, config)
+    :erlcloud_sqs.set_queue_attributes(queue, attrs, config)
 
-    :erlcloud_sqs.send_message(q_name, 'abcd', config)
-    [messages: [message]] = :erlcloud_sqs.receive_message(q_name, config)
+    :erlcloud_sqs.send_message(queue, 'abcd', config)
+    [messages: [message]] = :erlcloud_sqs.receive_message(queue, config)
 
     :timer.sleep(1000)
     [messages: [dlq_message]] = :erlcloud_sqs.receive_message(dlq_name, config)
     assert dlq_message[:body] == message[:body]
     assert dlq_message[:message_id] == message[:message_id]
 
-    [messages: []] = :erlcloud_sqs.receive_message(q_name, config)
+    [messages: []] = :erlcloud_sqs.receive_message(queue, config)
   end
 
-  test "list queues" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-
+  @tag fixtures: [:queue]
+  test "list queues", %{queue: queue} do
     queues = :erlcloud_sqs.list_queues(config)
-    assert 'http://localhost:4567/#{q_name}' in queues
+    assert 'http://localhost:4567/#{queue}' in queues
   end
 
-  test "list queues with prefix" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-
-    queues = :erlcloud_sqs.list_queues(q_name, config)
-    assert queues == ['http://localhost:4567/#{q_name}']
+  @tag fixtures: [:queue]
+  test "list queues with prefix", %{queue: queue} do
+    queues = :erlcloud_sqs.list_queues(queue, config)
+    assert queues == ['http://localhost:4567/#{queue}']
   end
 
   defp config do

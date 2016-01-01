@@ -46,6 +46,7 @@ defmodule Vassal.Mixfile do
      # For testing
      {:erlcloud, "~> 0.12.0", only: [:test]},
      {:httpoison, "~> 0.8.0", only: [:test]},
+     {:ex_unit_fixtures, "~> 0.1.1", only: [:test]},
 
      # For linting etc.
      {:credo, "~> 0.2.0", only: [:dev, :test], warn_missing: false},
