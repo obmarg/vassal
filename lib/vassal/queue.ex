@@ -6,24 +6,14 @@ defmodule Vassal.Queue do
 
   alias Vassal.QueueStore
 
-  alias Vassal.Queue.Receiver
-  alias Vassal.Queue.ReceiptHandles
-  alias Vassal.Queue.Config
+  alias Vassal.Queue.{Receiver, ReceiptHandles, Config}
 
-  alias Vassal.Actions.CreateQueue
-  alias Vassal.Actions.GetQueueUrl
-  alias Vassal.Actions.SendMessage
-  alias Vassal.Actions.ReceiveMessage
-  alias Vassal.Actions.DeleteMessage
-  alias Vassal.Actions.ChangeMessageVisibility
-  alias Vassal.Actions.DeleteQueue
-  alias Vassal.Actions.SetQueueAttributes
-  alias Vassal.Actions.GetQueueAttributes
-  alias Vassal.Actions.ListQueues
+  alias Vassal.Actions.{CreateQueue, GetQueueUrl, SendMessage, ReceiveMessage,
+                        DeleteMessage, ChangeMessageVisibility, DeleteQueue,
+                        SetQueueAttributes, GetQueueAttributes, ListQueues}
 
   alias Vassal.Errors.SQSError
-  alias Vassal.Message
-  alias Vassal.Utils
+  alias Vassal.{Message, Utils}
 
 
   @doc """
