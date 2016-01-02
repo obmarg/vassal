@@ -1,5 +1,4 @@
 defmodule VassalTest do
-  use ExUnitFixtures
   use ExUnit.Case
   doctest Vassal
 
@@ -228,6 +227,10 @@ defmodule VassalTest do
   test "list queues with prefix", %{queue: queue, config: config} do
     queues = :erlcloud_sqs.list_queues(queue, config)
     assert queues == ['http://localhost:4567/#{queue}']
+  end
+
+  test "change message visibility batch" do
+    queues = :erlcloud_sqs.list_queues()
   end
 
   defp random_queue_name do
