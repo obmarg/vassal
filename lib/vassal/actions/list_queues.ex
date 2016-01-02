@@ -9,7 +9,7 @@ defmodule Vassal.Actions.ListQueues do
   end
 
   defimpl Vassal.Actions.ActionValidator, for: __MODULE__ do
-    def valid?(action), do: true
+    def valid?(_), do: true
   end
 
   defmodule Result do
