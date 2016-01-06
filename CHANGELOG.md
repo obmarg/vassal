@@ -1,3 +1,9 @@
+v0.2.1 (6/1/15)
+----
+
+- Added missing applications to mix.exs
+- Load migration files from correct path.
+
 v0.2.0 (6/1/15)
 ----
 
