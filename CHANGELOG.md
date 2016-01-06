@@ -1,3 +1,10 @@
+v0.2.0 (6/1/15)
+----
+
+- Queues persist across restarts using ecto & sqlite.
+- ListQueues action supported.
+- Some other misc internal changes.
+
 v0.1.2
 ----
 
