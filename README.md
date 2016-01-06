@@ -10,7 +10,7 @@ Vassal is released in 2 forms - a docker container and a packaged release.
 
 Installing & running Vassal via docker is the simplest option:
 
-    docker run -p 4567:4567 -d obmarg/vassal:0.1.2
+    docker run -p 4567:4567 -d obmarg/vassal:0.2.0
 
 ### Installing & Running from Release
 
@@ -25,8 +25,8 @@ For example:
 
     mkdir vassal
     cd vassal
-    wget https://github.com/obmarg/vassal/releases/download/v0.1.2/vassal-0.1.2-osx.tar.gz
-    tar -xf vassal-0.1.2-osx.tar.gz
+    wget https://github.com/obmarg/vassal/releases/download/v0.2.0/vassal-0.2.0-osx.tar.gz
+    tar -xf vassal-0.2.0-osx.tar.gz
     bin/vassal start
 
 ### Configuration
