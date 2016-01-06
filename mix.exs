@@ -3,7 +3,7 @@ defmodule Vassal.Mixfile do
 
   def project do
     [app: :vassal,
-     version: "0.2.0",
+     version: "0.2.1",
      elixir: "~> 1.2",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -15,7 +15,7 @@ defmodule Vassal.Mixfile do
   # Type "mix help compile.app" for more information
   def application do
     [applications: [:logger, :cowboy, :plug, :gproc, :poison, :uuid, :exactor,
-                    :fsm, :mix, :ecto, :sqlite_ecto],
+                    :fsm, :mix, :ecto, :sqlite_ecto, :sqlitex, :esqlite],
      mod: {Vassal, []}]
   end
 

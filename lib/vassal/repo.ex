@@ -11,7 +11,8 @@ defmodule Vassal.Repo do
     use ExActor.GenServer
 
     defstart start_link do
-      Ecto.Migrator.run(Vassal.Repo, "priv/repo/migrations", :up, all: true)
+      migration_dir = Application.app_dir(:vassal, "priv/repo/migrations")
+      Ecto.Migrator.run(Vassal.Repo, migration_dir, :up, all: true)
       initial_state(nil, 100)
     end
 
