@@ -1,4 +1,5 @@
 defmodule VassalTest do
+  use ExUnitFixtures
   use ExUnit.Case
   doctest Vassal
 

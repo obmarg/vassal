@@ -86,7 +86,7 @@ defmodule Vassal.Utils do
     |> Enum.map(fn (kv_dict) ->
       kv_dict
       |> Enum.map(fn {key, [{_, val}]} -> {key, val} end)
-    |> Enum.into %{}
+      |> Enum.into(%{})
     end)
   end
 

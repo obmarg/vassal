@@ -30,6 +30,19 @@ config :vassal, Vassal.Repo,
   adapter: Sqlite.Ecto,
   database: if Mix.env != :test, do: "vassal.db", else: "test.db"
 
+if Mix.env == :test do
+  config :ex_aws,
+    access_key_id: "test",
+    secret_access_key: "test",
+    http_client: HTTPoison,
+    sqs: [scheme: "http://", host: "localhost", port: 4567, region: "vassal"]
+
+  config :vassal, ExAws,
+    access_key_id: "test",
+    secret_access_key: "test",
+    sqs: [scheme: "http://", host: "localhost", port: 4567, region: "vassal"]
+end
+
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment

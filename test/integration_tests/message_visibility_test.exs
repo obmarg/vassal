@@ -1,13 +1,10 @@
 defmodule VassalMessageVisibilityTest do
   use ExUnit.Case
 
-  use VassalTestFixtures
-
-  import VassalTestCommon, only: [config: 0]
-
   @tag fixtures: [:queue]
-  test "changing message visibility", %{queue: queue} do
-    send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
+  test "changing message visibility", %{queue: queue, config: config} do
+    # TODO: Ok, so this shite doesn't even do parsing.  FFS!
+    send_resp = ExAws.SQS.send_message(queue, "abcd")
 
     [messages: [message]] = :erlcloud_sqs.receive_message(
       queue, [], 2, 1, config
@@ -30,5 +27,4 @@ defmodule VassalMessageVisibilityTest do
     assert message[:body] == 'abcd'
     assert message[:message_id] == send_resp[:message_id]
   end
-
 end

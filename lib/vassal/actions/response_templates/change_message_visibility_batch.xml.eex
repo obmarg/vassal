@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<ChangeMessageVisibilityBatchResponse>
+    <!-- TODO: Fill me in -->
+    <%= Vassal.Actions.response_metadata %>
+</ChangeMessageVisibilityBatchResponse>

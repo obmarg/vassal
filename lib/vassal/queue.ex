@@ -10,7 +10,8 @@ defmodule Vassal.Queue do
 
   alias Vassal.Actions.{CreateQueue, GetQueueUrl, SendMessage, ReceiveMessage,
                         DeleteMessage, ChangeMessageVisibility, DeleteQueue,
-                        SetQueueAttributes, GetQueueAttributes, ListQueues}
+                        SetQueueAttributes, GetQueueAttributes, ListQueues,
+                        ChangeMessageVisibilityBatch}
 
   alias Vassal.Errors.SQSError
   alias Vassal.{Message, Utils}
@@ -140,6 +141,10 @@ defmodule Vassal.Queue do
     %ListQueues.Result{queue_urls: queues |> Enum.map(&queue_url/1)}
   end
 
+  def run_action(%ChangeMessageVisibilityBatch{actions: actions}) do
+    %ChangeMessageVisibilityBatch.Result{results: run_batch_actions(actions)}
+  end
+
   @doc """
   Sends a message to a queue.
 
@@ -197,5 +202,19 @@ defmodule Vassal.Queue do
 
   defp queue_url(queue_name) do
     "#{Application.get_env(:vassal, :url)}/#{queue_name}"
+  end
+
+  defp run_batch_actions(actions) do
+    actions
+    |> Enum.map(fn (action) ->
+      Task.async [__MODULE__, :run_action, [action]]
+    end)
+    |> Enum.map(fn (task) ->
+      try do
+        Task.await(task)
+      catch
+        :exit, reason -> reason
+      end
+    end)
   end
 end
