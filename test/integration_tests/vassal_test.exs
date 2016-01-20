@@ -3,29 +3,13 @@ defmodule VassalTest do
   use ExUnit.Case
   doctest Vassal
 
-  require Record
-  Record.defrecord(
-    :aws_config,
-    Record.extract(:aws_config,
-                   from_lib: "erlcloud/include/erlcloud_aws.hrl")
-  )
+  @moduletag fixtures: [:queue]
 
-  deffixture queue do
-    name = random_queue_name
-    [queue_url: _] = :erlcloud_sqs.create_queue(name, config)
-
-    on_exit fn ->
-      :erlcloud_sqs.delete_queue(name, config)
-    end
-
-    name
-  end
-
-  test "can create queue" do
+  @tag fixtures: []
+  test "can create queue", %{config: config} do
     :erlcloud_sqs.create_queue(random_queue_name, config)
   end
 
-  @tag fixtures: [:queue]
   test "can get queue url", %{queue: queue} do
     # GRR, erlcloud has no get_queue_url.
     # Let's hack it together!
@@ -37,6 +21,7 @@ defmodule VassalTest do
     assert String.contains?(resp.body, "http://localhost:4567/#{queue}")
   end
 
+  @tag fixtures: []
   test "getting queue url for non existent queue" do
     # GRR, erlcloud has no get_queue_url.
     # Let's hack it together!
@@ -49,6 +34,7 @@ defmodule VassalTest do
                             "AWS.SimpleQueueService.NonExistentQueue")
   end
 
+  @tag fixtures: []
   test "invalid action" do
     HTTPoison.start
     resp = HTTPoison.get!(
@@ -59,26 +45,22 @@ defmodule VassalTest do
                             "AWS.SimpleQueueService.InvalidAction")
   end
 
-  @tag fixtures: [:queue]
-  test "sending a message", %{queue: queue} do
+  test "sending a message", %{queue: queue, config: config} do
     :erlcloud_sqs.send_message(queue, 'abcd', config)
   end
 
-  @tag fixtures: [:queue]
-  test "receiving a message", %{queue: queue} do
+  test "receiving a message", %{queue: queue, config: config} do
     send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
     [messages: [message]] = :erlcloud_sqs.receive_message(queue, [], 2, config)
     assert message[:message_id] == send_resp[:message_id]
     assert message[:body] == 'abcd'
   end
 
-  @tag fixtures: [:queue]
-  test "receiving no messages", %{queue: queue} do
+  test "receiving no messages", %{queue: queue, config: config} do
     [messages: []] = :erlcloud_sqs.receive_message(queue, [], 2, config)
   end
 
-  @tag fixtures: [:queue]
-  test "receiving messages with wait", %{queue: queue} do
+  test "receiving messages with wait", %{queue: queue, config: config} do
     spawn_link(fn ->
       :timer.sleep(500)
       :erlcloud_sqs.send_message(queue, 'abcd', config)
@@ -93,8 +75,7 @@ defmodule VassalTest do
     assert message1[:message_id] != message2[:message_id]
   end
 
-  @tag fixtures: [:queue]
-  test "re-receive message after visibility timeout", %{queue: queue} do
+  test "re-receive message after visibility timeout", %{queue: queue, config: config} do
     send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
 
     [messages: [message]] = :erlcloud_sqs.receive_message(
@@ -112,8 +93,7 @@ defmodule VassalTest do
     assert message[:message_id] == send_resp[:message_id]
   end
 
-  @tag fixtures: [:queue]
-  test "deleting a message", %{queue: queue} do
+  test "deleting a message", %{queue: queue, config: config} do
     send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
 
     [messages: [message]] = :erlcloud_sqs.receive_message(
@@ -128,8 +108,7 @@ defmodule VassalTest do
     [messages: []] = :erlcloud_sqs.receive_message(queue, [], 2, 1, config)
   end
 
-  @tag fixtures: [:queue]
-  test "changing message visibility", %{queue: queue} do
+  test "changing message visibility", %{queue: queue, config: config} do
     send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
 
     [messages: [message]] = :erlcloud_sqs.receive_message(
@@ -154,19 +133,16 @@ defmodule VassalTest do
     assert message[:message_id] == send_resp[:message_id]
   end
 
-  test "deleting a queue" do
-    q_name = random_queue_name
-    :erlcloud_sqs.create_queue(q_name, config)
-    :erlcloud_sqs.delete_queue(q_name, config)
+  test "deleting a queue", %{queue: queue, config: config} do
+    :erlcloud_sqs.delete_queue(queue, config)
 
     :timer.sleep(100)
     assert_raise ErlangError, fn ->
-      :erlcloud_sqs.send_message(q_name, 'abcd', config)
+      :erlcloud_sqs.send_message(queue, 'abcd', config)
     end
   end
 
-  @tag fixtures: [:queue]
-  test "receiving with attributes", %{queue: queue} do
+  test "receiving with attributes", %{queue: queue, config: config} do
     send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
     [messages: [message]] = :erlcloud_sqs.receive_message(
       queue, [:all], 2, config
@@ -180,8 +156,7 @@ defmodule VassalTest do
     assert message[:attributes][:approximate_first_receive_timestamp]
   end
 
-  @tag fixtures: [:queue]
-  test "getting all attributes", %{queue: queue} do
+  test "getting all attributes", %{queue: queue, config: config} do
     attrs = :erlcloud_sqs.get_queue_attributes(queue, config)
     assert attrs[:delay_seconds] == 0
     assert attrs[:visibility_timeout] == 30
@@ -191,15 +166,13 @@ defmodule VassalTest do
     assert String.ends_with?(arn, q_str)
   end
 
-  @tag fixtures: [:queue]
-  test "getting specific attributes", %{queue: queue} do
+  test "getting specific attributes", %{queue: queue, config: config} do
     [visibility_timeout: 30] = :erlcloud_sqs.get_queue_attributes(
       queue, [:visibility_timeout], config
     )
   end
 
-  @tag fixtures: [:queue]
-  test "setting attributes", %{queue: queue} do
+  test "setting attributes", %{queue: queue, config: config} do
     redrive_policy = build_redrive_policy(1, "test_arn")
     attributes = [visibility_timeout: 40,
                   delay_seconds: 50,
@@ -215,8 +188,7 @@ defmodule VassalTest do
     assert str_redrive == attributes[:redrive_policy]
   end
 
-  @tag fixtures: [:queue]
-  test "max receives", %{queue: queue} do
+  test "max receives", %{queue: queue, config: config} do
     attrs = [visibility_timeout: 1, redrive_policy: build_redrive_policy(2)]
     :erlcloud_sqs.set_queue_attributes(queue, attrs, config)
 
@@ -230,8 +202,7 @@ defmodule VassalTest do
     [messages: []] = :erlcloud_sqs.receive_message(queue, config)
   end
 
-  @tag fixtures: [:queue]
-  test "dead letter queues", %{queue: queue} do
+  test "dead letter queues", %{queue: queue, config: config} do
     dlq_name = random_queue_name
     :erlcloud_sqs.create_queue(dlq_name, config)
     attrs = [visibility_timeout: 1,
@@ -249,24 +220,14 @@ defmodule VassalTest do
     [messages: []] = :erlcloud_sqs.receive_message(queue, config)
   end
 
-  @tag fixtures: [:queue]
-  test "list queues", %{queue: queue} do
+  test "list queues", %{queue: queue, config: config} do
     queues = :erlcloud_sqs.list_queues(config)
     assert 'http://localhost:4567/#{queue}' in queues
   end
 
-  @tag fixtures: [:queue]
-  test "list queues with prefix", %{queue: queue} do
+  test "list queues with prefix", %{queue: queue, config: config} do
     queues = :erlcloud_sqs.list_queues(queue, config)
     assert queues == ['http://localhost:4567/#{queue}']
-  end
-
-  defp config do
-    aws_config(sqs_host: 'localhost',
-               sqs_protocol: 'http',
-               sqs_port: 4567,
-               access_key_id: 'test',
-               secret_access_key: 'test')
   end
 
   defp random_queue_name do
