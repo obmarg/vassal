@@ -133,7 +133,7 @@ defmodule Vassal.Queue do
 
   def run_action(%ListQueues{prefix: prefix}) do
     queues = QueueStore.list_queues
-    if prefix do
+    if prefix != nil and String.length(prefix) > 0 do
       queues = queues |> Enum.filter(&(String.starts_with? &1, prefix))
     end
 
