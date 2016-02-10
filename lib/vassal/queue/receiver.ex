@@ -69,7 +69,7 @@ defmodule Vassal.Queue.Receiver do
   def init(queue_name) do
     queue_name |> to_gproc_name |> :gproc.reg
 
-    :timer.send_interval(@poll_interval, :poll)
+    :erlang.send_after(@poll_interval, self, :poll)
     {:ok, %{queue_messages_pid: QueueMessages.for_queue(queue_name),
             waiting_requests: [],
             completed_requests: HashDict.new}}
@@ -109,7 +109,9 @@ defmodule Vassal.Queue.Receiver do
   end
 
   def handle_info(:poll, state) do
-    {:noreply, attempt_receives(state)}
+    result = attempt_receives(state)
+    :erlang.send_after(@poll_interval, self, :poll)
+    {:noreply, result}
   end
 
   def handle_info({:ack_timeout, uuid}, state) do
