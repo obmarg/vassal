@@ -6,7 +6,7 @@ defmodule VassalMessageTest do
   alias Vassal.Message.MessageInfo
 
   setup do
-    queue_name = UUID.uuid1
+    queue_name = UUID.uuid4
     {:ok, q_pid} = QueueMessages.start_link(queue_name)
 
     {:ok, %{queue: queue_name, queue_pid: q_pid}}

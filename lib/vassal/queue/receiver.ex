@@ -33,7 +33,7 @@ defmodule Vassal.Queue.Receiver do
   """
   @spec receive_messages(pid, Vassal.Actions.ReceiveMessage.t) :: [pid]
   def receive_messages(receiver, action) do
-    req_id = UUID.uuid1
+    req_id = UUID.uuid4
     GenServer.cast(receiver, %ReceiveRequest{action: action,
                                              from: self,
                                              id: req_id})
