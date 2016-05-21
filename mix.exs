@@ -35,13 +35,12 @@ defmodule Vassal.Mixfile do
      {:fsm, "~> 0.2.0"},
      {:gproc, "~> 0.5.0"},
      {:exactor, "~> 2.2.0"},
-     {:poison, "~> 1.5"},
+     {:poison, "~> 1.5.0"},
      {:ecto, "~> 1.1.0"},
-     {:sqlite_ecto, "~> 1.0.0"},
+     {:sqlite_ecto, "~> 1.1.0"},
 
      # For building releases
-     {:exrm, "~> 1.0.0-rc7"},
-     {:edip, "~> 0.4.3", only: [:dev], warn_missing: false},
+     {:exrm, "~> 1.0.4"},
 
      # For testing
      {:erlcloud, "~> 0.12.0", only: [:test]},
@@ -49,7 +48,7 @@ defmodule Vassal.Mixfile do
      {:ex_unit_fixtures, "~> 0.3.0", only: [:test]},
 
      # For linting etc.
-     {:credo, "~> 0.2.0", only: [:dev, :test], warn_missing: false},
+     {:credo, "~> 0.3.0", only: [:dev, :test], warn_missing: false},
    ]
   end
 end
