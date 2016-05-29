@@ -5,3 +5,13 @@ otp_release:
   - 18.0
   - 18.1
   - 18.2
+before_deploy: "MIX_ENV=prod mix compile; MIX_ENV=prod mix release; cp rel/vassal/releases/${TRAVIS_TAG:1}/vassal.tar.gz vassal-${TRAVIS_TAG:1}-ubuntu.tar.gz"
+deploy:
+  provider: releases
+  api_key:
+    secure: urvV1JCb8tor3ej00CKtTMu0X/XQS/3yO8usWwhmnr5ueOPXByS2T6VcK9/SSHj3yTeflG2JxfUv9QuXOQ8miry9OPLr0tgfiq+FIsfR4x5LoGRPmmdWwvVu25Frz/JMC8uchbSQ4zrLaPmpZutFhwf3Tw6xxdj1E3TiezZ0VPYyoqrroBhMtw+/7AEGQOWLBE0xuwEQqDfAjSDW57t7eB8X+2lVSc/acApG+Pls+zN1HzdMD4tHe5+zFJNTXMfG7494Oxa+HXX/Y4QH8XSf2XYN5hvTxG7TjKtas/vi1oqLmn744mkTomEoeOdJubEe9/2/wWCSHlr3VPX5QLhVAQK1QKMoMjx12Kgai88BpS/U2Eam5CoIdUYxfBCsyQlVDaUaDDVKXqcjcIdDeOk8ezwwFVRjQJPQ8i19sT7To1XsfUWILW6Pp83Pcer1OlLFYoJ3La3b7VfQM6uQDpC1y/Oua8sUMhA/2ZQjpRH2JabpIWZp1d/cj5EKDyq1YZkehEpPXmY+NVPQvQwEvQHiydoG4MpNljxM3vzQnvznLrJ2V+GkPH69Y1ToYO6Bcju5SV6WEw6pEktVp0oiLy4x6yVGdKsLiUIERv9OkZTs38qlQocEKFSOKi5mE9vehQ91dWv2+eqdurD74Jtx9DB7WvpKUN+pCAKCvdFHlT994YU=
+  file: "vassal-${TRAVIS_TAG:1}-ubuntu.tar.gz"
+  skip_cleanup: true
+  on:
+    tags: true
+    condition: "($TRAVIS_ELIXIR_VERSION = 1.2.0) && ($TRAVIS_OTP_RELEASE = 18.2)"
