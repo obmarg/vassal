@@ -60,9 +60,12 @@ defmodule Vassal.Queue do
         |> Config.to_outgoing_attrs
         |> Dict.merge(%{"QueueArn" => Utils.make_arn(queue_name)})
 
-    unless "All" in requested_attrs do
-      attrs = attrs |> Dict.take(requested_attrs)
-    end
+    attrs =
+      if "All" in requested_attrs do
+        attrs
+      else
+        attrs |> Dict.take(requested_attrs)
+      end
 
     %GetQueueAttributes.Result{attributes: attrs}
   end
@@ -71,14 +74,17 @@ defmodule Vassal.Queue do
   def run_action(%ReceiveMessage{} = action) do
     receipt_handles = action.queue_name |> ReceiptHandles.for_queue
 
-    unless action.wait_time_ms && action.visibility_timeout_ms do
-      config = QueueStore.queue_config(action.queue_name)
-      vis_timeout = action.visibility_timeout_ms || config.visibility_timeout_ms
-      wait_time = action.wait_time_ms || config.recv_wait_time_ms
+    action =
+      if action.wait_time_ms && action.visibility_timeout_ms do
+        action
+      else
+        config = QueueStore.queue_config(action.queue_name)
+        vis_timeout = action.visibility_timeout_ms || config.visibility_timeout_ms
+        wait_time = action.wait_time_ms || config.recv_wait_time_ms
 
-      action = %{action | wait_time_ms: wait_time,
-                          visibility_timeout_ms: vis_timeout}
-    end
+        %{action | wait_time_ms: wait_time,
+                   visibility_timeout_ms: vis_timeout}
+      end
 
     messages =
       action.queue_name
@@ -132,10 +138,12 @@ defmodule Vassal.Queue do
   end
 
   def run_action(%ListQueues{prefix: prefix}) do
-    queues = QueueStore.list_queues
-    if prefix != nil and String.length(prefix) > 0 do
-      queues = queues |> Enum.filter(&(String.starts_with? &1, prefix))
-    end
+    queues =
+      if prefix != nil and String.length(prefix) > 0 do
+        QueueStore.list_queues |> Enum.filter(&(String.starts_with? &1, prefix))
+      else
+        QueueStore.list_queues
+      end
 
     %ListQueues.Result{queue_urls: queues |> Enum.map(&queue_url/1)}
   end
@@ -178,9 +186,12 @@ defmodule Vassal.Queue do
       end
       attributes = Enum.into %{}, attributes
 
-      unless "All" in action.attributes do
-        attributes = Dict.take(attributes, action.attributes)
-      end
+      attributes =
+        if "All" in action.attributes do
+          attributes
+        else
+          Dict.take(attributes, action.attributes)
+        end
 
       %ReceiveMessage.Message{
         message_id: message_info.message_id,

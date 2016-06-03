@@ -38,10 +38,9 @@ defmodule Vassal.Queue.Receiver do
                                              from: self,
                                              id: req_id})
 
-    wait_time_ms = action.wait_time_ms
-    if wait_time_ms == 0 do
-      wait_time_ms = 500
-    end
+    wait_time_ms =
+      if action.wait_time_ms != 0, do: action.wait_time_ms, else: 500
+
     receive do
       {:response, ^req_id, message_pids} ->
         :ok = GenServer.call(receiver, {:ack, req_id})

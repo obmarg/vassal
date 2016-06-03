@@ -163,18 +163,15 @@ defmodule Vassal.Message do
 
   def handle_call({:receive_message, vis_timeout_ms}, _from, state) do
     state = update_in state.message.attributes, fn(attrs) ->
-      first_recv = attrs.approx_first_receive
-      if first_recv == nil do
-        first_recv = now
-      end
+      first_recv = attrs.approx_first_receive || now
       %{attrs | approx_first_receive: first_recv,
                 approx_receive_count: attrs.approx_receive_count + 1}
     end
 
-    reply = state.message
-    if state.state_machine.state == :awaiting_delete do
-      reply = nil
-    end
+    reply =
+      if state.state_machine.state != :awaiting_delete do
+        state.message
+      end
 
     {:reply, reply, Dict.update!(state,
                                  :state_machine,
@@ -186,15 +183,19 @@ defmodule Vassal.Message do
   end
 
   def handle_call({:change_visibility_timeout, timeout_ms}, _from, state) do
-    if state.state_machine.state == :processing do
-      old_ms = :erlang.read_timer(state.timer_ref)
-      if old_ms do
-        :erlang.cancel_timer(state.timer_ref)
-        timer_ref = :erlang.start_timer(old_ms + timeout_ms,
-                                        self, :timer_expired)
-        state = %{state | timer_ref: timer_ref}
+    state =
+      if state.state_machine.state == :processing do
+        old_ms = :erlang.read_timer(state.timer_ref)
+        if old_ms do
+          :erlang.cancel_timer(state.timer_ref)
+          timer_ref = :erlang.start_timer(old_ms + timeout_ms,
+                                          self, :timer_expired)
+          state = %{state | timer_ref: timer_ref}
+        end
+      else
+        state
       end
-    end
+
     {:reply, :ok, state}
   end
 
@@ -219,9 +220,7 @@ defmodule Vassal.Message do
   end
 
   def handle_info({:start_visibility_timer, timer_len}, state) do
-    if timer_len == :nil do
-      timer_len = state.message.default_visibility_timeout_ms
-    end
+    timer_len = timer_len || state.message.default_visibility_timeout_ms
 
     timer_ref = :erlang.start_timer(timer_len, self, :timer_expired)
     {:noreply, Dict.put(state, :timer_ref, timer_ref)}
