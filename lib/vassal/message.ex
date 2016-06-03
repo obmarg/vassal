@@ -8,6 +8,7 @@ defmodule Vassal.Message do
   send a message to the GenServer that causes it to take that action.
   """
   use GenServer
+  require Logger
 
   alias Vassal.Queue.QueueMessages
 
@@ -248,7 +249,7 @@ defmodule Vassal.Message do
   end
 
   def handle_info(msg, state) do
-    Logger.warning("Message received unknown message: #{inspect msg}")
+    Logger.warn("Message received unknown message: #{inspect msg}")
     {:noreply, state}
   end
 
