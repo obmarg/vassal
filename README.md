@@ -56,7 +56,6 @@ Some of these may be implemented in the near future:
 - User defined message attributes.
 - Getting non-config queue attributes (other than ARN).
   ApproximateNumberOfMessages etc. are not supported.
-- Listing queues
 - Authentication / permissions, or anything related.
 - MD5 checksums.
 - SenderId Attribute on messages.
