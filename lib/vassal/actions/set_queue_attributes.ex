@@ -33,14 +33,13 @@ defmodule Vassal.Actions.SetQueueAttributes do
   end
 
   defp parse_attr_key(attr_key) do
+    import Regex, only: [named_captures: 2]
+
     # attr_key can either be "Attribute.1.Name" or "Attribute.1.Name"
-    rv = Regex.named_captures(~r/^Attribute\.(?<num>\d+)\.(?<type>\w+)$/,
-                              attr_key)
-    unless rv do
-      rv = Regex.named_captures(~r/^Attribute\.(?<type>\w+)\.(?<num>\d+)$/,
-                                attr_key)
-    end
-    rv
+    num_pre = ~r/^Attribute\.(?<num>\d+)\.(?<type>\w+)$/
+    num_post = ~r/^Attribute\.(?<type>\w+)\.(?<num>\d+)$/
+
+    named_captures(num_pre, attr_key) || named_captures(num_post, attr_key)
   end
 
   defp attr_name_to_atom(attr_name) do

@@ -235,11 +235,14 @@ defmodule VassalTest do
   end
 
   defp build_redrive_policy(max_receives, dead_letter_name \\ nil) do
-    policy = %{"maxReceiveCount" => max_receives}
-    if dead_letter_name do
-      policy = Dict.put(policy, "deadLetterTargetArn",
-                        Vassal.Utils.make_arn(dead_letter_name))
-    end
+    policy =
+      if dead_letter_name do
+        %{"maxReceiveCount" => max_receives,
+          "deadLetterTargetArn" => Vassal.Utils.make_arn(dead_letter_name)}
+      else
+        %{"maxReceiveCount" => max_receives}
+      end
+
     Poison.encode!(policy)
   end
 end

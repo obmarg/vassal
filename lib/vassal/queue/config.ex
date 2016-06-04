@@ -36,19 +36,19 @@ defmodule Vassal.Queue.Config do
       visibility_timeout_ms: get_param_as_ms(attrs, :visibility_timeout)
     }
 
-    if attrs[:redrive_policy] do
-      redrive = Poison.decode!(attrs[:redrive_policy])
-      dead_letter_queue = nil
-      if redrive["deadLetterTargetArn"] do
+    rv =
+      if attrs[:redrive_policy] do
+        redrive = Poison.decode!(attrs[:redrive_policy])
         dead_letter_queue =
-          redrive["deadLetterTargetArn"]
-            |> String.split(":")
-            |> List.last
+          if redrive["deadLetterTargetArn"] do
+            redrive["deadLetterTargetArn"] |> String.split(":") |> List.last
+          end
+        rv
+        |> Dict.put(:max_receives, redrive["maxReceiveCount"])
+        |> Dict.put(:dead_letter_queue, dead_letter_queue)
+      else
+        rv
       end
-      rv = rv
-      |> Dict.put(:max_receives, redrive["maxReceiveCount"])
-      |> Dict.put(:dead_letter_queue, dead_letter_queue)
-    end
 
     defaults = Map.from_struct(%__MODULE__{})
     rv = Dict.merge(rv, defaults, fn(_, v1, v2) -> v1 || v2 end)
@@ -65,14 +65,16 @@ defmodule Vassal.Queue.Config do
       "VisibilityTimeout" => div(config.visibility_timeout_ms, 1000),
     }
     if config.max_receives do
-      redrive_policy = %{"maxReceiveCount" => config.max_receives}
-      if config.dead_letter_queue do
-        redrive_policy = Dict.put(redrive_policy,
-                                  "deadLetterTargetArn",
-                                  Utils.make_arn(config.dead_letter_queue))
-      end
-      rv = Dict.put(rv, "RedrivePolicy", Poison.encode!(redrive_policy))
+      redrive_policy =
+        if config.dead_letter_queue do
+          %{"maxReceiveCount"     => config.max_receives,
+            "deadLetterTargetArn" => Utils.make_arn(config.dead_letter_queue)}
+        else
+          %{"maxReceiveCount" => config.max_receives}
+        end
+      Dict.put(rv, "RedrivePolicy", Poison.encode!(redrive_policy))
+    else
+      rv
     end
-    rv
   end
 end
