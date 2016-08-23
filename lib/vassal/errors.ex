@@ -15,9 +15,13 @@ defmodule Vassal.Errors do
 
     raise SQSError, "SQS.SimpleQueueService.SomeError"
     """
-    def exception(code) do
+    def exception(code) when is_binary(code) do
       msg = "#{code}; See SQS Docs for more details"
       %SQSError{message: msg, code: code}
+    end
+
+    def exception(attrs) do
+      struct(__MODULE__, attrs)
     end
 
     defimpl Vassal.Actions.Response, for: __MODULE__ do

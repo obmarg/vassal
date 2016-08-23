@@ -15,6 +15,7 @@ defmodule Vassal.Queue do
   alias Vassal.Errors.SQSError
   alias Vassal.{Message, Utils}
 
+  @max_message_bytes 256 * 1024
 
   @doc """
   Runs a queue action.
@@ -156,6 +157,12 @@ defmodule Vassal.Queue do
   """
   @spec send_message(String.t, Message.MessageInfo.t) :: :ok
   def send_message(queue_name, message_info) do
+    if byte_size(message_info.body) > @max_message_bytes do
+      raise SQSError,
+        code: "InvalidParameterValue",
+        message: "One or more parameters are invalid.  Reason: Message must be shorter than #{@max_message_bytes} bytes."
+    end
+
     config = QueueStore.queue_config(queue_name)
     message_info = %Message.MessageInfo{
       message_info | delay_ms: message_info.delay_ms || config.delay_ms,

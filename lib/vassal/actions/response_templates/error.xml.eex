@@ -3,7 +3,7 @@
     <Error>
         <Type><%= result.type %></Type>
         <Code><%= result.code %></Code>
-        <Message><%= result.code %>; See the SQS docs.</Message>
+        <Message><%= result.message %></Message>
         <Detail/>
     </Error>
     <RequestId><%= UUID.uuid4 %></RequestId>
