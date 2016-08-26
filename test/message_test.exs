@@ -61,12 +61,12 @@ defmodule VassalMessageTest do
     :timer.sleep(10)
     [_] = QueueMessages.dequeue(context.queue_pid, 1)
     %MessageInfo{} = Message.receive_message(pid, nil)
-    Message.change_visibility_timeout(pid, 100)
+    Message.change_visibility_timeout(pid, 40)
 
-    :timer.sleep(180)
+    :timer.sleep(20)
     assert_in_queue(context, 0)
 
-    :timer.sleep(30)
+    :timer.sleep(25)
     assert_in_queue(context, 1)
   end
 

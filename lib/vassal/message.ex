@@ -185,13 +185,9 @@ defmodule Vassal.Message do
   def handle_call({:change_visibility_timeout, timeout_ms}, _from, state) do
     state =
       if state.state_machine.state == :processing do
-        old_ms = :erlang.read_timer(state.timer_ref)
-        if old_ms do
-          :erlang.cancel_timer(state.timer_ref)
-          timer_ref = :erlang.start_timer(old_ms + timeout_ms,
-                                          self, :timer_expired)
-          state = %{state | timer_ref: timer_ref}
-        end
+        :erlang.cancel_timer(state.timer_ref)
+        timer_ref = :erlang.start_timer(timeout_ms, self, :timer_expired)
+        state = %{state | timer_ref: timer_ref}
       else
         state
       end
