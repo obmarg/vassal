@@ -30,7 +30,7 @@ defmodule Vassal.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [{:cowboy, "~> 1.0.0"},
-     {:plug, "~> 1.0"},
+     {:plug, "~> 1.2"},
      {:uuid, "~> 1.1"},
      {:fsm, "~> 0.2.0"},
      {:gproc, "~> 0.5.0"},
@@ -43,12 +43,12 @@ defmodule Vassal.Mixfile do
      {:exrm, "~> 1.0.4"},
 
      # For testing
-     {:erlcloud, "~> 0.12.0", only: [:test]},
-     {:httpoison, "~> 0.8.0", only: [:test]},
-     {:ex_unit_fixtures, "~> 0.3.0", only: [:test]},
+     {:erlcloud, "~> 0.13", only: [:test]},
+     {:httpoison, "~> 0.9", only: [:test]},
+     {:ex_unit_fixtures, "~> 0.3", only: [:test]},
 
      # For linting etc.
-     {:credo, "~> 0.3.0", only: [:dev, :test], warn_missing: false},
+     {:credo, "~> 0.4", only: [:dev, :test], warn_missing: false},
    ]
   end
 end
