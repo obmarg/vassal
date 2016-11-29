@@ -5,7 +5,7 @@ erl_crash.dump
 *.ez
 
 .edip.log
-rel/
+rel/vassal/
 tarballs/
 
 .vagrant/

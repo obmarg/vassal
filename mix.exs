@@ -40,7 +40,7 @@ defmodule Vassal.Mixfile do
      {:sqlite_ecto, "~> 1.1.0"},
 
      # For building releases
-     {:exrm, "~> 1.0.4"},
+     {:distillery, "~> 0.10"},
 
      # For testing
      {:erlcloud, "~> 0.13", only: [:test]},
