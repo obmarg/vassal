@@ -1,3 +1,9 @@
+v0.3.1 (29/11/16)
+---
+
+- Build production release on travis. This issue prevented v0.3.0 from actually
+  being released.
+
 v0.3.0 (29/11/16)
 ---
 
