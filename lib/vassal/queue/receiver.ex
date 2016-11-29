@@ -32,21 +32,32 @@ defmodule Vassal.Queue.Receiver do
   Returns a list of message PIDs that can be queried for their data.
   """
   @spec receive_messages(pid, Vassal.Actions.ReceiveMessage.t) :: [pid]
+  def receive_messages(receiver, %{wait_time_ms: 0} = action) do
+    req_id = UUID.uuid4
+
+    message_pids = GenServer.call(
+      receiver,
+      %ReceiveRequest{action: action, from: self, id: req_id}
+    )
+    if message_pids != [] do
+      :ok = GenServer.call(receiver, {:ack, req_id})
+    end
+    message_pids
+  end
+
   def receive_messages(receiver, action) do
     req_id = UUID.uuid4
+
     GenServer.cast(receiver, %ReceiveRequest{action: action,
                                              from: self,
                                              id: req_id})
-
-    wait_time_ms =
-      if action.wait_time_ms != 0, do: action.wait_time_ms, else: 500
 
     receive do
       {:response, ^req_id, message_pids} ->
         :ok = GenServer.call(receiver, {:ack, req_id})
         message_pids
     after
-      wait_time_ms ->
+      action.wait_time_ms ->
         GenServer.cast(receiver, {:cancel_request, req_id})
         []
     end
@@ -73,6 +84,9 @@ defmodule Vassal.Queue.Receiver do
             completed_requests: HashDict.new}}
   end
 
+  # When a client has received a response to the ReceiveRequest they will make
+  # this call to acknowledge. We can stop our timer to avoid re-queueing the
+  # messages.
   def handle_call({:ack, uuid}, _from, state) do
     {_, timer_ref} = state.completed_requests[uuid]
     :erlang.cancel_timer(timer_ref)
@@ -81,6 +95,29 @@ defmodule Vassal.Queue.Receiver do
                                &(Dict.delete &1, uuid))}
   end
 
+  # When we get a short-polling ReceiveRequest we want to return
+  # the result immediately, rather than adding the request into the waiting
+  # queue.
+  def handle_call(%ReceiveRequest{} = request,
+                  _from,
+                  %{waiting_requests: []} = state) do
+    messages = QueueMessages.dequeue(
+      state.queue_messages_pid,
+      request.action.max_messages
+    )
+    if messages == [] do
+      {:reply, [], state}
+    else
+      {:reply, messages, start_waiting_for_ack(request, state, messages)}
+    end
+  end
+
+  def handle_call(%ReceiveRequest{} = request, _from, state) do
+    {:reply, [], state}
+  end
+
+  # When we get a long-polling ReceiveRequest and don't have any other requests
+  # waiting, we want to check for messages and send them back if there are any.
   def handle_cast(%ReceiveRequest{} = request,
                   %{waiting_requests: []} = state) do
     messages = QueueMessages.dequeue(state.queue_messages_pid,
@@ -89,17 +126,21 @@ defmodule Vassal.Queue.Receiver do
       :erlang.send_after(@poll_interval, self, :poll)
       {:noreply, %{state | waiting_requests: [request]}}
     else
-      new_state = reply_to_request(request, state, messages)
+      new_state = reply_to_async_request(request, state, messages)
       {:noreply, new_state}
     end
   end
 
+  # When we get a long-polling ReceiveRequest and we've already got other
+  # requests waiting, we should put this request on the end of the queue.
   def handle_cast(%ReceiveRequest{} = request, state) do
     {:noreply, Dict.update!(state,
                             :waiting_requests,
                             &(List.insert_at &1, -1, request))}
   end
 
+  # When a clients ReceiveRequest times out, they can call :cancel_request to
+  # remove their request from the queue.
   def handle_cast({:cancel_request, req_id}, state) do
     new_requests = Enum.reject state.waiting_requests, fn (req) ->
       req.id == req_id
@@ -132,20 +173,33 @@ defmodule Vassal.Queue.Receiver do
     if messages == [] do
       state
     else
-      new_state = reply_to_request(request, state, messages)
+      new_state = reply_to_async_request(request, state, messages)
       attempt_receives(%{new_state | waiting_requests: rest})
     end
   end
 
   @recv_ack_timeout_ms 5000
 
-  defp reply_to_request(request, state, messages) do
+  # Replies to an asynchronous ReceiveRequest, and starts
+  # the acknowledgement timer.
+  defp reply_to_async_request(request, state, messages) do
     send(request.from, {:response, request.id, messages})
-    timer_ref = :erlang.send_after(@recv_ack_timeout_ms, self,
-                                   {:ack_timeout, request.id})
-    Dict.update!(state,
-                 :completed_requests,
-                 &(Dict.put &1, request.id, {messages, timer_ref}))
+    start_waiting_for_ack(request, state, messages)
+  end
+
+  # Starts the acknowledgement timer for a completed ReceiveRequest.
+  # If the ReceiveRequest is not ack'd in before the timer runs down we will
+  # re-queue the messages.
+  defp start_waiting_for_ack(request, state, messages) do
+    timer_ref = :erlang.send_after(
+      @recv_ack_timeout_ms, self,
+      {:ack_timeout, request.id}
+    )
+    Dict.update!(
+      state,
+      :completed_requests,
+      &(Dict.put &1, request.id, {messages, timer_ref})
+    )
   end
 
   defp to_gproc_name(queue_name) do

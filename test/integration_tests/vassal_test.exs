@@ -112,22 +112,21 @@ defmodule VassalTest do
     send_resp = :erlcloud_sqs.send_message(queue, 'abcd', config)
 
     [messages: [message]] = :erlcloud_sqs.receive_message(
-      queue, [], 2, 1, config
+      queue, [], 2, 5, config
     )
 
     assert message[:body] == 'abcd'
     assert message[:message_id] == send_resp[:message_id]
-    :erlcloud_sqs.change_message_visibility(queue, message[:receipt_handle],
-                                            1, config)
-    :timer.sleep(1000)
-
-    [messages: []] = :erlcloud_sqs.receive_message(
-      queue, [], 2, 1, config
+    :ok = :erlcloud_sqs.change_message_visibility(
+      queue, message[:receipt_handle], 2, config
     )
 
-    :timer.sleep(1100)
+    [messages: []] = :erlcloud_sqs.receive_message(
+      queue, [], 2, 1, 1, config
+    )
+
     [messages: [message]] = :erlcloud_sqs.receive_message(
-      queue, [], 2, 1, config
+      queue, [], 2, 1, 2, config
     )
     assert message[:body] == 'abcd'
     assert message[:message_id] == send_resp[:message_id]
