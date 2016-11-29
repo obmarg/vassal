@@ -7,7 +7,7 @@ otp_release:
   - 19.0
   - 19.1
 before_script: mix local.rebar --force
-before_deploy: "MIX_ENV=prod mix compile; MIX_ENV=prod mix release; cp rel/vassal/releases/${TRAVIS_TAG:1}/vassal.tar.gz vassal-${TRAVIS_TAG:1}-ubuntu.tar.gz"
+before_deploy: "MIX_ENV=prod mix compile; MIX_ENV=prod mix release --env=prod; cp rel/vassal/releases/${TRAVIS_TAG:1}/vassal.tar.gz vassal-${TRAVIS_TAG:1}-ubuntu.tar.gz"
 deploy:
   provider: releases
   api_key:
