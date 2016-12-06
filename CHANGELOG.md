@@ -1,3 +1,10 @@
+v0.3.4 (6/12/16)
+---
+
+- Updated pre-start hook to use python to generate cookie.  The command line
+  verison didn't always generate a cookie that sed could handle, leading to
+  startup problems.
+
 v0.3.3 (6/12/16)
 ---
 
