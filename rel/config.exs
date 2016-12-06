@@ -16,13 +16,14 @@ use Mix.Releases.Config,
 environment :dev do
   set dev_mode: true
   set include_erts: false
-  set cookie: :"%JqBj2Bv=Tz4`^p@c>|k~r|tzl@Juorn.F(TQCJOZZ6NoTOo,jiGEJ)1u~gxl;3L"
+  set cookie: :"%JqBj2Bv=Tz4^p@c>|k~r|tzl@Juorn.F(TQCJOZZ6NoTOo,jiGEJ)1u~gxl;3L"
 end
 
 environment :prod do
   set include_erts: true
   set include_src: false
-  set cookie: "#{:crypto.hash(:sha512, System.get_env("COOKIE") || :crypto.strong_rand_bytes(1024)) |> Base.encode64}"
+  set cookie: :"%JqBj2Bv=Tz4^p@c>|k~r|tzl@Juorn.F(TQCJOZZ6NoTOo,jiGEJ)1u~gxl;3L"
+  set pre_start_hook: "rel/hooks/pre-start.sh"
 end
 
 # You may define one or more releases in this file.
