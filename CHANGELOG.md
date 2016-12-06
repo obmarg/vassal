@@ -1,3 +1,10 @@
+v0.3.2 (6/12/16)
+---
+
+- Production releases now auto generate their own cookie on startup, rather
+  than using the default cookie generated at release time as in earlier v0.3.x
+  releases.
+
 v0.3.1 (29/11/16)
 ---
 
