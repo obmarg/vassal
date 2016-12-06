@@ -1,3 +1,9 @@
+v0.3.3 (6/12/16)
+---
+
+- Fixed some problems with the the pre-start hook from v0.3.2 that prevented it
+  from working on linux.
+
 v0.3.2 (6/12/16)
 ---
 
