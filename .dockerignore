@@ -1,0 +1,5 @@
+_build
+rel/vassal
+log*
+load_test
+deps
