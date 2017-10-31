@@ -1,3 +1,8 @@
+v0.3.5 (31/11/17)
+---
+
+- Fix pre-start.sh so it works with python 3 as well as 2.
+
 v0.3.4 (6/12/16)
 ---
 
