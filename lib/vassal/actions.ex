@@ -112,7 +112,7 @@ defmodule Vassal.Actions do
   def valid_attribute?(attr) when is_binary(attr) do
     try do
       attr
-      |> Mix.Utils.underscore
+      |> Macro.underscore
       |> String.to_existing_atom
       |> valid_attribute?
     rescue

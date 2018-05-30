@@ -36,7 +36,7 @@ defmodule Vassal.Actions.SendMessage do
   end
 
   defp attr_name_to_atom(attr_name) do
-    attr_name |> Mix.Utils.underscore |> String.to_existing_atom
+    attr_name |> Macro.underscore |> String.to_existing_atom
   end
 
   defimpl Vassal.Actions.ActionValidator, for: __MODULE__ do
