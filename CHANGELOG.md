@@ -1,3 +1,8 @@
+v0.3.6 (30/05/18)
+---
+
+- Fix a runtime deprecation warning around Mix.Utils.underscore
+
 v0.3.5 (31/11/17)
 ---
 
